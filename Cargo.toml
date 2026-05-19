@@ -69,6 +69,9 @@ html2text = "0.12"
 # Quoted-printable encoding for EML export
 quoted_printable = "0.5"
 
+# HTML sanitization for exported messages (strip scripts, on* handlers, etc.)
+ammonia = "4"
+
 # TUI
 ratatui = "0.29"
 crossterm = "0.28"

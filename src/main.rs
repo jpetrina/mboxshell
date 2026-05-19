@@ -65,6 +65,11 @@ enum Commands {
         /// emlAnalyzer). Only affects --format=eml.
         #[arg(long)]
         qp: bool,
+        /// Keep the original HTML body unsanitized (scripts, on* handlers,
+        /// iframes preserved). Only safe for local archival — DO NOT serve
+        /// these files. Only affects --format=html.
+        #[arg(long)]
+        raw_html: bool,
     },
     /// Merge multiple MBOX files
     Merge {
@@ -207,7 +212,16 @@ fn main() -> anyhow::Result<()> {
             output,
             query,
             qp,
-        }) => cmd_export(&path, &format, &output, query.as_deref(), force, qp),
+            raw_html,
+        }) => cmd_export(
+            &path,
+            &format,
+            &output,
+            query.as_deref(),
+            force,
+            qp,
+            raw_html,
+        ),
         Some(Commands::Merge {
             inputs,
             output,
@@ -410,6 +424,7 @@ fn cmd_export(
     query: Option<&str>,
     force: bool,
     qp: bool,
+    raw_html: bool,
 ) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("{}: {}", i18n::err_file_not_found(), path.display());
@@ -501,10 +516,11 @@ fn cmd_export(
         "html" => {
             std::fs::create_dir_all(output)?;
             let mut count = 0usize;
+            let sanitize = !raw_html;
             for (i, entry) in selected.iter().enumerate() {
                 pb.set_position(i as u64);
                 let body = store.get_message(entry)?.clone();
-                mboxshell::export::html::export_html(entry, &body, output)?;
+                mboxshell::export::html::export_html_opts(entry, &body, output, sanitize)?;
                 count += 1;
             }
             pb.finish_and_clear();

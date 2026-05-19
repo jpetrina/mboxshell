@@ -20,11 +20,11 @@ pub fn export_eml(
 
 /// Export a single message as an `.eml` file with options.
 ///
-/// If `qp` is true, single-part text bodies with 8-bit content are
-/// re-encoded as quoted-printable so the resulting file is pure 7-bit
-/// ASCII (helps strict-UTF-8 tools like `eml-extractor`). Multipart
-/// messages are written as-is (a future enhancement could walk the
-/// MIME tree and re-encode each text part).
+/// If `qp` is true, every text/* part with 8-bit content is re-encoded
+/// as quoted-printable so the resulting file is pure 7-bit ASCII. Works
+/// for both single-part and multipart messages (the MIME tree is walked
+/// recursively and each leaf is re-encoded in place). Helps strict-UTF-8
+/// tools like `eml-extractor` and `emlAnalyzer`.
 pub fn export_eml_opts(
     store: &mut MboxStore,
     entry: &MailEntry,
@@ -36,7 +36,7 @@ pub fn export_eml_opts(
     let mut bytes = unescape_mboxrd(stripped);
 
     if qp {
-        bytes = reencode_single_part_as_qp(bytes);
+        bytes = reencode_message_as_qp(bytes);
     }
 
     let filename = eml_filename(entry);
@@ -151,16 +151,17 @@ fn unescape_mboxrd(body: &[u8]) -> Vec<u8> {
     out
 }
 
-/// Re-encode a single-part text body as quoted-printable.
+/// Re-encode every text/* part of a message as quoted-printable.
 ///
-/// Operates on the raw EML bytes:
-/// - Splits at the first blank line into headers and body.
-/// - Bails out (returns input unchanged) if the message is multipart,
-///   already quoted-printable/base64, or has no 8-bit bytes in the body.
-/// - Otherwise rewrites/inserts `Content-Transfer-Encoding: quoted-printable`
-///   and replaces the body with its QP-encoded form.
-fn reencode_single_part_as_qp(eml: Vec<u8>) -> Vec<u8> {
-    // Locate header/body boundary (first blank line).
+/// Works for both single-part and multipart messages. For multipart,
+/// recursively walks the MIME tree by splitting on the declared
+/// boundary and re-encoding each leaf part in turn. Non-text parts and
+/// parts already encoded as quoted-printable/base64 are left untouched.
+///
+/// The result is a message whose text bodies are pure 7-bit ASCII,
+/// which makes it accepted by strict-UTF-8 tooling like `eml-extractor`
+/// and `emlAnalyzer`.
+fn reencode_message_as_qp(eml: Vec<u8>) -> Vec<u8> {
     let split = match find_header_body_split(&eml) {
         Some(s) => s,
         None => return eml,
@@ -168,31 +169,58 @@ fn reencode_single_part_as_qp(eml: Vec<u8>) -> Vec<u8> {
     let headers_raw = &eml[..split.headers_end];
     let body = &eml[split.body_start..];
 
-    // Bail out cases:
-    // - multipart anything
-    // - already non-8bit transfer encoding
     let headers_lower = headers_raw.to_ascii_lowercase();
-    if window_contains(&headers_lower, b"content-type: multipart/")
-        || window_contains(&headers_lower, b"content-type:multipart/")
-    {
-        return eml;
-    }
-    let cte = extract_header_value(&headers_lower, b"content-transfer-encoding");
-    if let Some(v) = &cte {
-        let v = v.trim().to_ascii_lowercase();
-        if v == "quoted-printable" || v == "base64" {
-            return eml;
+    let content_type_lc = extract_header_value(&headers_lower, b"content-type").unwrap_or_default();
+    // Preserve original case for parameters like boundary= which is case-sensitive.
+    let content_type_orig =
+        extract_header_value_original_case(headers_raw, b"content-type").unwrap_or_default();
+
+    // Multipart: split by boundary, recurse, reassemble.
+    if content_type_lc.starts_with("multipart/") {
+        if let Some(boundary) = extract_boundary(&content_type_orig) {
+            let new_body = reencode_multipart_body(body, &boundary);
+            let mut out = Vec::with_capacity(headers_raw.len() + new_body.len() + 2);
+            out.extend_from_slice(headers_raw);
+            if !out.ends_with(b"\n") {
+                out.extend_from_slice(b"\r\n");
+            }
+            // Preserve the blank line that separates headers from body
+            let sep_len = split.body_start - split.headers_end;
+            if sep_len >= 2 {
+                out.extend_from_slice(&eml[split.headers_end..split.body_start]);
+            } else {
+                out.extend_from_slice(b"\r\n");
+            }
+            out.extend_from_slice(&new_body);
+            return out;
         }
-    }
-    // Nothing to re-encode if body is already 7-bit ASCII.
-    if body.iter().all(|&b| b < 128) {
+        // No boundary parameter — give up and return as-is
         return eml;
     }
 
-    // Encode body as QP.
-    let encoded = quoted_printable::encode(body);
+    // Non-multipart: single leaf part. Same logic as before.
+    reencode_leaf_part(headers_raw, body, &headers_lower)
+}
 
-    // Build new headers: drop any existing CTE, then append the new one.
+/// Re-encode a single leaf MIME part (headers + body).
+///
+/// Returns the headers + blank line + body, with quoted-printable
+/// encoding applied iff the part is text/* with 8-bit content.
+fn reencode_leaf_part(headers_raw: &[u8], body: &[u8], headers_lower: &[u8]) -> Vec<u8> {
+    let content_type = extract_header_value(headers_lower, b"content-type").unwrap_or_default();
+    let cte = extract_header_value(headers_lower, b"content-transfer-encoding").unwrap_or_default();
+
+    // Only re-encode text/* parts.
+    let is_text = content_type.starts_with("text/") || content_type.is_empty();
+    let already_safe = cte == "quoted-printable" || cte == "base64";
+    let has_8bit = body.iter().any(|&b| b >= 128);
+
+    if !is_text || already_safe || !has_8bit {
+        // Reassemble unchanged.
+        return reassemble(headers_raw, body);
+    }
+
+    let encoded = quoted_printable::encode(body);
     let mut new_headers: Vec<u8> = Vec::with_capacity(headers_raw.len() + 64);
     for line in split_header_lines(headers_raw) {
         let lower = line.to_ascii_lowercase();
@@ -201,13 +229,11 @@ fn reencode_single_part_as_qp(eml: Vec<u8>) -> Vec<u8> {
         }
         new_headers.extend_from_slice(line);
     }
-    // Ensure a trailing line ending before appending.
     if !new_headers.ends_with(b"\n") {
         new_headers.extend_from_slice(b"\r\n");
     }
     new_headers.extend_from_slice(b"Content-Transfer-Encoding: quoted-printable\r\n");
 
-    // Reassemble: new_headers + blank line + encoded body
     let mut out = new_headers;
     out.extend_from_slice(b"\r\n");
     out.extend_from_slice(&encoded);
@@ -215,6 +241,125 @@ fn reencode_single_part_as_qp(eml: Vec<u8>) -> Vec<u8> {
         out.extend_from_slice(b"\r\n");
     }
     out
+}
+
+fn reassemble(headers_raw: &[u8], body: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(headers_raw.len() + body.len() + 2);
+    out.extend_from_slice(headers_raw);
+    if !out.ends_with(b"\n") {
+        out.extend_from_slice(b"\r\n");
+    }
+    out.extend_from_slice(b"\r\n");
+    out.extend_from_slice(body);
+    out
+}
+
+/// Split a multipart body by its boundary and re-encode each part.
+///
+/// MIME multipart bodies look like:
+///   <preamble — ignored by clients>
+///   --BOUNDARY
+///   <part 1 headers + blank line + part 1 body>
+///   --BOUNDARY
+///   <part 2 headers + blank line + part 2 body>
+///   --BOUNDARY--
+///   <epilogue — ignored>
+fn reencode_multipart_body(body: &[u8], boundary: &str) -> Vec<u8> {
+    let delim = format!("--{boundary}");
+    let delim_bytes = delim.as_bytes();
+    let close = format!("--{boundary}--");
+    let close_bytes = close.as_bytes();
+
+    // Find all delimiter positions (must be at line start).
+    let mut delim_positions: Vec<usize> = Vec::new();
+    let mut i = 0;
+    while i < body.len() {
+        let at_line_start = i == 0 || body[i - 1] == b'\n';
+        if at_line_start && body[i..].starts_with(delim_bytes) {
+            delim_positions.push(i);
+            i += delim_bytes.len();
+        } else {
+            i += 1;
+        }
+    }
+
+    if delim_positions.is_empty() {
+        return body.to_vec();
+    }
+
+    let mut out = Vec::with_capacity(body.len() + 64);
+    // Preamble before the first delimiter (rare, kept as-is)
+    out.extend_from_slice(&body[..delim_positions[0]]);
+
+    for win in delim_positions.windows(2) {
+        let start = win[0];
+        let end = win[1];
+        // Each segment is: delimiter line + CRLF + part content
+        // Find end of delimiter line
+        let after_delim = body[start..end]
+            .iter()
+            .position(|&b| b == b'\n')
+            .map(|p| start + p + 1)
+            .unwrap_or(start + delim_bytes.len());
+        // Closing delimiter (--BOUNDARY--) marks end of multipart
+        let is_close = body[start..end].starts_with(close_bytes);
+
+        // Write delimiter line as-is
+        out.extend_from_slice(&body[start..after_delim]);
+        if is_close {
+            // Everything after a close delimiter is epilogue
+            out.extend_from_slice(&body[after_delim..end]);
+            continue;
+        }
+        // Re-encode the part. The "part" runs from after_delim up to end,
+        // but we need to leave the CRLF that precedes the next boundary
+        // line in place (RFC 2046 §5.1.1).
+        let part_end = trim_trailing_crlf_before_boundary(&body[after_delim..end]);
+        let part_bytes = &body[after_delim..after_delim + part_end];
+        let trailing = &body[after_delim + part_end..end];
+
+        let reencoded = reencode_message_as_qp(part_bytes.to_vec());
+        out.extend_from_slice(&reencoded);
+        out.extend_from_slice(trailing);
+    }
+
+    // Last delimiter segment: from last delim_position to end of body
+    let last = *delim_positions.last().unwrap();
+    out.extend_from_slice(&body[last..]);
+    out
+}
+
+/// Strip the CRLF (or LF) that precedes a MIME boundary line, returning
+/// the byte index where the part actually ends.
+fn trim_trailing_crlf_before_boundary(segment: &[u8]) -> usize {
+    let mut end = segment.len();
+    if end >= 2 && &segment[end - 2..end] == b"\r\n" {
+        end -= 2;
+    } else if end >= 1 && segment[end - 1] == b'\n' {
+        end -= 1;
+    }
+    end
+}
+
+/// Extract the `boundary=…` parameter from a Content-Type value.
+/// Handles both quoted (`boundary="abc"`) and unquoted forms.
+fn extract_boundary(content_type: &str) -> Option<String> {
+    let lower = content_type.to_ascii_lowercase();
+    let idx = lower.find("boundary")?;
+    let after = &content_type[idx..];
+    // Skip "boundary" then optional whitespace and '='
+    let eq = after.find('=')?;
+    let mut rest = after[eq + 1..].trim_start();
+    if rest.starts_with('"') {
+        rest = &rest[1..];
+        let end = rest.find('"')?;
+        return Some(rest[..end].to_string());
+    }
+    // Unquoted: stop at ';' or whitespace
+    let end = rest
+        .find(|c: char| c == ';' || c.is_whitespace())
+        .unwrap_or(rest.len());
+    Some(rest[..end].to_string())
 }
 
 struct HeaderBodySplit {
@@ -241,10 +386,6 @@ fn find_header_body_split(bytes: &[u8]) -> Option<HeaderBodySplit> {
 
 fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack.windows(needle.len()).position(|w| w == needle)
-}
-
-fn window_contains(haystack: &[u8], needle: &[u8]) -> bool {
-    find_subsequence(haystack, needle).is_some()
 }
 
 /// Iterate over header lines, including folded continuations as part of the
@@ -279,6 +420,23 @@ fn split_header_lines(headers: &[u8]) -> Vec<&[u8]> {
 fn extract_header_value(headers_lower: &[u8], name_lower: &[u8]) -> Option<String> {
     for line in split_header_lines(headers_lower) {
         if line.starts_with(name_lower) && line.get(name_lower.len()) == Some(&b':') {
+            let val = &line[name_lower.len() + 1..];
+            return Some(String::from_utf8_lossy(val).trim().to_string());
+        }
+    }
+    None
+}
+
+/// Like `extract_header_value` but case-insensitive in the name match and
+/// returning the value in its original case (needed for `boundary=…` which is
+/// case-sensitive).
+fn extract_header_value_original_case(headers_raw: &[u8], name_lower: &[u8]) -> Option<String> {
+    for line in split_header_lines(headers_raw) {
+        if line.len() <= name_lower.len() || line.get(name_lower.len()) != Some(&b':') {
+            continue;
+        }
+        let name_slice = &line[..name_lower.len()];
+        if name_slice.eq_ignore_ascii_case(name_lower) {
             let val = &line[name_lower.len() + 1..];
             return Some(String::from_utf8_lossy(val).trim().to_string());
         }
@@ -360,22 +518,15 @@ mod tests {
     #[test]
     fn test_qp_reencode_skips_when_ascii() {
         let eml = b"Subject: Test\r\nContent-Type: text/plain\r\n\r\nHello world\r\n".to_vec();
-        let out = reencode_single_part_as_qp(eml.clone());
+        let out = reencode_message_as_qp(eml.clone());
         assert_eq!(out, eml, "pure ASCII bodies must be unchanged");
-    }
-
-    #[test]
-    fn test_qp_reencode_skips_multipart() {
-        let eml = b"Subject: Test\r\nContent-Type: multipart/mixed; boundary=x\r\n\r\n--x\r\nbody \xf1\r\n--x--\r\n".to_vec();
-        let out = reencode_single_part_as_qp(eml.clone());
-        assert_eq!(out, eml, "multipart messages must be left untouched");
     }
 
     #[test]
     fn test_qp_reencode_encodes_8bit_body() {
         // Body contains 0xf1 (ñ in ISO-8859-1)
         let eml = b"Subject: Test\r\nContent-Type: text/plain; charset=ISO-8859-1\r\nContent-Transfer-Encoding: 8bit\r\n\r\nHola caf\xf1n\r\n".to_vec();
-        let out = reencode_single_part_as_qp(eml);
+        let out = reencode_message_as_qp(eml);
         // All bytes must be < 128 after re-encoding
         assert!(
             out.iter().all(|&b| b < 128),
@@ -387,7 +538,82 @@ mod tests {
             s.contains("=F1") || s.contains("=f1"),
             "0xf1 must be QP-encoded"
         );
-        // Old 8bit header must be gone
         assert!(!s.contains("Content-Transfer-Encoding: 8bit"));
+    }
+
+    #[test]
+    fn test_qp_reencode_multipart_alternative() {
+        let eml = b"Subject: Test\r\n\
+            Content-Type: multipart/alternative; boundary=\"BNDRY\"\r\n\
+            \r\n\
+            --BNDRY\r\n\
+            Content-Type: text/plain; charset=ISO-8859-1\r\n\
+            Content-Transfer-Encoding: 8bit\r\n\
+            \r\n\
+            Hola caf\xf1n\r\n\
+            --BNDRY\r\n\
+            Content-Type: text/html; charset=UTF-8\r\n\
+            Content-Transfer-Encoding: 8bit\r\n\
+            \r\n\
+            <p>Hola caf\xc3\xa9</p>\r\n\
+            --BNDRY--\r\n"
+            .to_vec();
+        let out = reencode_message_as_qp(eml);
+        assert!(
+            out.iter().all(|&b| b < 128),
+            "every byte of a multipart QP-encoded message must be 7-bit"
+        );
+        let s = String::from_utf8(out).unwrap();
+        // Both inner parts must have CTE rewritten
+        let cte_count = s
+            .matches("Content-Transfer-Encoding: quoted-printable")
+            .count();
+        assert_eq!(cte_count, 2, "both text parts must declare QP");
+        // Outer multipart Content-Type must be preserved
+        assert!(s.contains("multipart/alternative"));
+        assert!(s.contains("--BNDRY"));
+        assert!(s.contains("--BNDRY--"));
+    }
+
+    #[test]
+    fn test_qp_reencode_multipart_skips_binary_part() {
+        // multipart/mixed with a text part + binary part; binary must stay
+        let eml = b"Content-Type: multipart/mixed; boundary=BB\r\n\
+            \r\n\
+            --BB\r\n\
+            Content-Type: text/plain; charset=ISO-8859-1\r\n\
+            Content-Transfer-Encoding: 8bit\r\n\
+            \r\n\
+            ca\xf1a\r\n\
+            --BB\r\n\
+            Content-Type: application/octet-stream\r\n\
+            Content-Transfer-Encoding: base64\r\n\
+            \r\n\
+            SGVsbG8gd29ybGQ=\r\n\
+            --BB--\r\n"
+            .to_vec();
+        let out = reencode_message_as_qp(eml);
+        let s = String::from_utf8_lossy(&out);
+        // Text part is now QP
+        assert!(s.contains("Content-Transfer-Encoding: quoted-printable"));
+        // Binary part still says base64
+        assert!(s.contains("Content-Transfer-Encoding: base64"));
+        assert!(s.contains("SGVsbG8gd29ybGQ="));
+    }
+
+    #[test]
+    fn test_extract_boundary_quoted() {
+        assert_eq!(
+            extract_boundary("multipart/mixed; boundary=\"abc def\""),
+            Some("abc def".to_string())
+        );
+    }
+
+    #[test]
+    fn test_extract_boundary_unquoted() {
+        assert_eq!(
+            extract_boundary("multipart/mixed; boundary=abc; charset=utf-8"),
+            Some("abc".to_string())
+        );
     }
 }

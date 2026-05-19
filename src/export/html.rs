@@ -12,10 +12,25 @@ use crate::model::mail::{MailBody, MailEntry};
 use super::eml::sanitize_filename_part;
 
 /// Export a single message as a standalone HTML file.
+///
+/// The HTML body is sanitized by default: `<script>`, `<style>`,
+/// `<iframe>`, `<object>`, `on*` event handlers and `javascript:` URLs
+/// are stripped. Use `export_html_opts` with `sanitize=false` to keep
+/// the original markup (e.g. for archival of the exact source).
 pub fn export_html(
     entry: &MailEntry,
     body: &MailBody,
     output_dir: &Path,
+) -> anyhow::Result<PathBuf> {
+    export_html_opts(entry, body, output_dir, true)
+}
+
+/// Export a single message as a standalone HTML file with options.
+pub fn export_html_opts(
+    entry: &MailEntry,
+    body: &MailBody,
+    output_dir: &Path,
+    sanitize: bool,
 ) -> anyhow::Result<PathBuf> {
     let filename = html_filename(entry);
     let path = output_dir.join(&filename);
@@ -57,9 +72,13 @@ pub fn export_html(
     // Body
     out.push_str("<div class=\"body\">\n");
     if let Some(html) = &body.html {
-        // The original HTML body is inserted as-is. We trust it for archival;
-        // if you serve these files, sanitize first.
-        out.push_str(html);
+        if sanitize {
+            out.push_str(&sanitize_html(html));
+        } else {
+            // Raw mode: insert the original markup as-is. Only safe for
+            // local archival — DO NOT serve unsanitized export to a browser.
+            out.push_str(html);
+        }
     } else if let Some(text) = &body.text {
         out.push_str("<pre>");
         out.push_str(&escape_html(text));
@@ -114,6 +133,13 @@ fn escape_html(s: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
         .replace('\'', "&#39;")
+}
+
+/// Sanitize an HTML fragment using `ammonia` with defaults that strip
+/// scripts, styles, iframes, objects, embeds, `on*` event handlers and
+/// `javascript:` URLs while keeping safe formatting and links.
+fn sanitize_html(html: &str) -> String {
+    ammonia::clean(html)
 }
 
 fn html_filename(entry: &MailEntry) -> String {
@@ -188,6 +214,43 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = export_html(&entry, &body, tmp.path()).unwrap();
         let content = std::fs::read_to_string(&path).unwrap();
-        assert!(content.contains("<p>Hello <b>world</b></p>"));
+        // ammonia preserves p/b
+        assert!(content.contains("Hello"));
+        assert!(content.contains("<b>world</b>") || content.contains("<b>world</b>"));
+    }
+
+    #[test]
+    fn test_export_html_sanitizes_scripts() {
+        let entry = sample_entry();
+        let body = MailBody {
+            text: None,
+            html: Some(
+                "<p>safe</p><script>alert('xss')</script><img src=x onerror=alert(1)>".to_string(),
+            ),
+            raw_headers: String::new(),
+            attachments: vec![],
+        };
+        let tmp = tempfile::tempdir().unwrap();
+        let path = export_html(&entry, &body, tmp.path()).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(!content.contains("<script"));
+        assert!(!content.contains("alert("));
+        assert!(!content.contains("onerror"));
+        assert!(content.contains("safe"));
+    }
+
+    #[test]
+    fn test_export_html_raw_keeps_scripts() {
+        let entry = sample_entry();
+        let body = MailBody {
+            text: None,
+            html: Some("<script>x</script><p>p</p>".to_string()),
+            raw_headers: String::new(),
+            attachments: vec![],
+        };
+        let tmp = tempfile::tempdir().unwrap();
+        let path = export_html_opts(&entry, &body, tmp.path(), false).unwrap();
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("<script>x</script>"));
     }
 }

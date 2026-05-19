@@ -7,6 +7,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Opt javascript actions into Node 24 (Node 20 is deprecated on GH runners
+  # from Sep 2026). Keeps actions/checkout@v4 and actions/upload-artifact@v4
+  # working past the deprecation date without bumping action versions.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 permissions:
   contents: write
