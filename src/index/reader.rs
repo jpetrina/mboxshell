@@ -53,7 +53,7 @@ pub fn top_senders(entries: &[MailEntry], n: usize) -> Vec<(String, usize)> {
         *counts.entry(key).or_default() += 1;
     }
     let mut sorted: Vec<(String, usize)> = counts.into_iter().collect();
-    sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
     sorted.truncate(n);
     sorted
 }

@@ -1,5 +1,12 @@
 //! Keyboard and input event handling.
 
+// The match-then-if pattern (`KeyCode::Char('j') => { if cond { ... } }`)
+// reads better here than match guards: each key has one arm, conditions
+// stay next to the action they protect, and the wildcard `_ => {}` handles
+// the "key matched but condition not met" case naturally.
+#![allow(clippy::collapsible_match)]
+#![allow(clippy::collapsible_if)]
+
 use std::path::PathBuf;
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};

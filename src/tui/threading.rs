@@ -194,7 +194,7 @@ pub fn build_threads(entries: &[MailEntry]) -> Vec<Thread> {
     }
 
     // Sort threads by newest message date (descending)
-    threads.sort_by(|a, b| b.date_range.1.cmp(&a.date_range.1));
+    threads.sort_by_key(|t| std::cmp::Reverse(t.date_range.1));
 
     threads
 }
