@@ -188,9 +188,8 @@ fn handle_mail_list_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
 
         // ── Actions ──────────────────────────────────────────
         KeyCode::Enter => {
-            if app.layout == LayoutMode::ListOnly {
-                app.layout = LayoutMode::HorizontalSplit;
-            }
+            // In ListOnly the view renders fullscreen on focus change,
+            // so keep the layout and just move focus.
             app.focus = PanelFocus::MailView;
         }
         KeyCode::Char(' ') => app.toggle_mark(),

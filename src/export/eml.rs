@@ -16,12 +16,13 @@ pub fn export_eml(
     output_dir: &Path,
 ) -> anyhow::Result<PathBuf> {
     let raw = store.get_raw_message(entry)?;
-    let body = skip_from_line(&raw);
+    let stripped = skip_from_line(&raw);
+    let unescaped = unescape_mboxrd(stripped);
 
     let filename = eml_filename(entry);
     let path = output_dir.join(&filename);
 
-    std::fs::write(&path, body)?;
+    std::fs::write(&path, &unescaped)?;
     Ok(path)
 }
 
@@ -73,6 +74,50 @@ fn skip_from_line(raw: &[u8]) -> &[u8] {
         }
     }
     raw
+}
+
+/// Reverse mboxrd `From `-line escaping for EML output.
+///
+/// In mboxrd, any body line starting with one or more `>` followed by `From `
+/// was escaped by prepending an extra `>`. To produce a standards-compliant
+/// RFC 5322 message we strip exactly one leading `>` from those lines.
+/// Also trims a trailing blank line that MBOX adds as a message separator.
+fn unescape_mboxrd(body: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(body.len());
+    let mut at_line_start = true;
+
+    let mut i = 0;
+    while i < body.len() {
+        if at_line_start && body[i] == b'>' {
+            // Count consecutive '>' followed by "From "
+            let mut j = i;
+            while j < body.len() && body[j] == b'>' {
+                j += 1;
+            }
+            if body[j..].starts_with(b"From ") {
+                // Drop exactly one '>'
+                out.extend_from_slice(&body[i + 1..j]);
+                out.extend_from_slice(b"From ");
+                i = j + b"From ".len();
+                at_line_start = false;
+                continue;
+            }
+        }
+        let b = body[i];
+        out.push(b);
+        at_line_start = b == b'\n';
+        i += 1;
+    }
+
+    // Trim a single trailing blank line added by MBOX as separator
+    while out.ends_with(b"\n\n") || out.ends_with(b"\r\n\r\n") {
+        out.pop();
+        if out.last() == Some(&b'\r') {
+            out.pop();
+        }
+    }
+
+    out
 }
 
 /// Sanitize a string for use in filenames.

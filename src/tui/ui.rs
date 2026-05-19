@@ -38,7 +38,13 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     // Main content — depends on layout mode
     match app.layout {
         LayoutMode::ListOnly => {
-            widgets::mail_list::render(frame, app, content_area);
+            // In fullscreen mode, Tab/Enter toggles between list and message.
+            // Show the message view when MailView has focus; otherwise show the list.
+            if app.focus == super::app::PanelFocus::MailView {
+                widgets::mail_view::render(frame, app, content_area);
+            } else {
+                widgets::mail_list::render(frame, app, content_area);
+            }
         }
         LayoutMode::HorizontalSplit => {
             let split = Layout::default()

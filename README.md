@@ -322,6 +322,11 @@ src/
 
 ## Changelog
 
+### v0.3.1
+- Fix: search bar registered every keystroke and pasted character twice on Windows Terminal and terminals with the kitty keyboard protocol (#2). Key events are now filtered on `KeyEventKind::Press`.
+- Fix: in fullscreen layout (`1`), pressing `Tab`/`Enter` on a message now shows the message view full-screen and `Tab`/`Esc` returns to the list (#1). Previously focus moved but nothing visible changed.
+- Fix: `.eml` export now reverses mboxrd `>From ` escaping and trims the trailing MBOX separator newline, producing files that are RFC 5322 compliant and accepted by standard parsers (#1).
+
 ### v0.3.0
 - Search filter popup (`F`): visual form to build queries without remembering syntax (from, to, subject, date range, size, attachment, label)
 - Result counter in search bar: shows `(N / total)` while typing

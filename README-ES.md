@@ -322,6 +322,11 @@ src/
 
 ## Changelog
 
+### v0.3.1
+- Fix: la barra de búsqueda registraba dos veces cada tecla y cada carácter pegado en Windows Terminal y en terminales con el protocolo kitty (#2). Ahora los eventos se filtran por `KeyEventKind::Press`.
+- Fix: en el layout pantalla completa (`1`), pulsar `Tab`/`Enter` sobre un mensaje ahora muestra la vista del mensaje a pantalla completa y `Tab`/`Esc` vuelve a la lista (#1). Antes el foco cambiaba pero no se veía nada nuevo.
+- Fix: la exportación a `.eml` ahora revierte el escapado mboxrd `>From ` y recorta el salto de línea separador del MBOX, produciendo ficheros conformes a RFC 5322 que aceptan los parsers estándar (#1).
+
 ### v0.3.0
 - Popup de filtros de busqueda (`F`): formulario visual para construir queries sin recordar la sintaxis (from, to, subject, rango de fechas, tamano, adjuntos, etiqueta)
 - Contador de resultados en la barra de busqueda: muestra `(N / total)` mientras escribes
