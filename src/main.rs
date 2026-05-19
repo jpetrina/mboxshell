@@ -60,6 +60,11 @@ enum Commands {
         output: PathBuf,
         #[arg(long)]
         query: Option<String>,
+        /// Re-encode 8-bit text bodies as quoted-printable so the EML is
+        /// pure 7-bit ASCII. Helps strict-UTF-8 tools (eml-extractor,
+        /// emlAnalyzer). Only affects --format=eml.
+        #[arg(long)]
+        qp: bool,
     },
     /// Merge multiple MBOX files
     Merge {
@@ -201,7 +206,8 @@ fn main() -> anyhow::Result<()> {
             format,
             output,
             query,
-        }) => cmd_export(&path, &format, &output, query.as_deref(), force),
+            qp,
+        }) => cmd_export(&path, &format, &output, query.as_deref(), force, qp),
         Some(Commands::Merge {
             inputs,
             output,
@@ -403,6 +409,7 @@ fn cmd_export(
     output: &Path,
     query: Option<&str>,
     force: bool,
+    qp: bool,
 ) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("{}: {}", i18n::err_file_not_found(), path.display());
@@ -444,10 +451,11 @@ fn cmd_export(
     match format {
         "eml" => {
             std::fs::create_dir_all(output)?;
-            let paths = mboxshell::export::eml::export_multiple_eml(
+            let paths = mboxshell::export::eml::export_multiple_eml_opts(
                 &mut store,
                 &selected,
                 output,
+                qp,
                 &|current, _total| {
                     pb.set_position(current as u64);
                 },
@@ -488,6 +496,23 @@ fn cmd_export(
                 i18n::cli_exported_txt(),
                 count,
                 i18n::cli_txt_files()
+            );
+        }
+        "html" => {
+            std::fs::create_dir_all(output)?;
+            let mut count = 0usize;
+            for (i, entry) in selected.iter().enumerate() {
+                pb.set_position(i as u64);
+                let body = store.get_message(entry)?.clone();
+                mboxshell::export::html::export_html(entry, &body, output)?;
+                count += 1;
+            }
+            pb.finish_and_clear();
+            println!(
+                "  {} {} {}",
+                i18n::cli_exported_html(),
+                count,
+                i18n::cli_html_files()
             );
         }
         _ => {

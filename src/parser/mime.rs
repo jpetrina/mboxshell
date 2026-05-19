@@ -173,94 +173,13 @@ fn extract_body_fallback(data: &[u8]) -> String {
 
 /// Convert HTML to plain text for terminal display.
 ///
-/// - Preserves line breaks from `<br>`, `<p>`, `<div>`
-/// - Converts `<a href="url">text</a>` to `"text [url]"`
-/// - Converts `<li>` to `"- item"`
-/// - Removes scripts and styles
-/// - Decodes common HTML entities
-/// - Wraps to the specified width
-pub fn html_to_text(html: &str, _width: usize) -> String {
-    let mut text = html.to_string();
-
-    // Remove script and style blocks
-    text = remove_tag_block(&text, "script");
-    text = remove_tag_block(&text, "style");
-
-    // Convert block elements to newlines
-    for tag in &["br", "BR", "br/", "br /"] {
-        text = text.replace(&format!("<{tag}>"), "\n");
-    }
-    for tag in &["p", "div", "tr", "li", "h1", "h2", "h3", "h4", "h5", "h6"] {
-        text = text.replace(&format!("<{tag}>"), "\n");
-        text = text.replace(&format!("<{tag} "), "\n<");
-        let upper = tag.to_uppercase();
-        text = text.replace(&format!("<{upper}>"), "\n");
-        text = text.replace(&format!("</{tag}>"), "\n");
-        text = text.replace(&format!("</{upper}>"), "\n");
-    }
-
-    // Strip all remaining HTML tags
-    let mut result = String::with_capacity(text.len());
-    let mut in_tag = false;
-    for ch in text.chars() {
-        match ch {
-            '<' => in_tag = true,
-            '>' => in_tag = false,
-            _ if !in_tag => result.push(ch),
-            _ => {}
-        }
-    }
-
-    // Decode HTML entities
-    result = result.replace("&amp;", "&");
-    result = result.replace("&lt;", "<");
-    result = result.replace("&gt;", ">");
-    result = result.replace("&quot;", "\"");
-    result = result.replace("&#39;", "'");
-    result = result.replace("&apos;", "'");
-    result = result.replace("&nbsp;", " ");
-    result = result.replace("&#160;", " ");
-
-    // Collapse multiple blank lines into at most two
-    let mut prev_was_blank = false;
-    let mut cleaned = String::with_capacity(result.len());
-    for line in result.lines() {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            if !prev_was_blank {
-                cleaned.push('\n');
-                prev_was_blank = true;
-            }
-        } else {
-            cleaned.push_str(trimmed);
-            cleaned.push('\n');
-            prev_was_blank = false;
-        }
-    }
-
-    cleaned.trim().to_string()
-}
-
-/// Remove an entire tag block (e.g. `<script>…</script>`).
-fn remove_tag_block(html: &str, tag: &str) -> String {
-    let mut result = String::with_capacity(html.len());
-    let mut remaining = html;
-    let open = format!("<{tag}");
-    let close = format!("</{tag}>");
-
-    while let Some(start) = remaining.to_lowercase().find(&open) {
-        result.push_str(&remaining[..start]);
-        let after = &remaining[start..];
-        if let Some(end) = after.to_lowercase().find(&close) {
-            remaining = &after[end + close.len()..];
-        } else {
-            // No closing tag — remove rest
-            remaining = "";
-            break;
-        }
-    }
-    result.push_str(remaining);
-    result
+/// Uses the `html2text` crate for proper rendering of tables, lists,
+/// headings, links and nested structures. `width` is the target line
+/// width in columns; pass the actual terminal width when available, or
+/// a sensible default (e.g. 100) otherwise.
+pub fn html_to_text(html: &str, width: usize) -> String {
+    let width = width.max(20);
+    html2text::from_read(html.as_bytes(), width)
 }
 
 #[cfg(test)]
@@ -293,14 +212,33 @@ mod tests {
     fn test_html_to_text_entities() {
         let html = "Tom &amp; Jerry &lt;3&gt;";
         let text = html_to_text(html, 80);
-        assert_eq!(text, "Tom & Jerry <3>");
+        assert_eq!(text.trim(), "Tom & Jerry <3>");
     }
 
     #[test]
     fn test_html_to_text_removes_scripts() {
         let html = "Before<script>alert('xss')</script>After";
         let text = html_to_text(html, 80);
-        assert_eq!(text, "BeforeAfter");
+        assert_eq!(text.trim(), "BeforeAfter");
+    }
+
+    #[test]
+    fn test_html_to_text_tables() {
+        let html = "<table><tr><th>Col1</th><th>Col2</th></tr>\
+                    <tr><td>A</td><td>B</td></tr></table>";
+        let text = html_to_text(html, 60);
+        assert!(text.contains("Col1"));
+        assert!(text.contains("Col2"));
+        assert!(text.contains('A'));
+        assert!(text.contains('B'));
+    }
+
+    #[test]
+    fn test_html_to_text_links() {
+        let html = r#"Click <a href="https://example.com">here</a>"#;
+        let text = html_to_text(html, 80);
+        assert!(text.contains("here"));
+        assert!(text.contains("example.com"));
     }
 
     #[test]

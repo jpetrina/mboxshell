@@ -240,6 +240,7 @@ fn handle_mail_list_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.show_export = true;
         }
         KeyCode::Char('h') => app.show_full_headers = !app.show_full_headers,
+        KeyCode::Char('H') => app.request_external_html_view(),
         KeyCode::Char('r') => app.show_raw = !app.show_raw,
         KeyCode::Char('F') => {
             app.reset_search_filters();
@@ -307,6 +308,7 @@ fn handle_mail_view_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.focus = PanelFocus::MailList;
         }
         KeyCode::Char('h') => app.show_full_headers = !app.show_full_headers,
+        KeyCode::Char('H') => app.request_external_html_view(),
         KeyCode::Char('r') => app.show_raw = !app.show_raw,
         KeyCode::Char('a') => {
             app.attachment_selected = 0;
@@ -460,6 +462,16 @@ fn handle_export_popup(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
                     }
                 }
                 1 => {
+                    // HTML export
+                    match export_current_html(app, &output_dir) {
+                        Ok(msg) => {
+                            app.set_status(&msg);
+                            app.show_export = false;
+                        }
+                        Err(e) => app.set_status(&format!("{}: {e}", i18n::tui_export_error())),
+                    }
+                }
+                2 => {
                     // TXT export
                     match export_current_txt(app, &output_dir) {
                         Ok(msg) => {
@@ -469,7 +481,7 @@ fn handle_export_popup(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
                         Err(e) => app.set_status(&format!("{}: {e}", i18n::tui_export_error())),
                     }
                 }
-                2 => {
+                3 => {
                     // CSV export
                     match export_current_csv(app, &output_dir) {
                         Ok(msg) => {
@@ -479,7 +491,7 @@ fn handle_export_popup(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
                         Err(e) => app.set_status(&format!("{}: {e}", i18n::tui_export_error())),
                     }
                 }
-                3 => {
+                4 => {
                     // Attachments
                     let att_count = app
                         .current_body
@@ -547,6 +559,26 @@ fn export_current_eml(app: &mut App, output_dir: &PathBuf) -> anyhow::Result<Str
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("message.eml");
+        Ok(format!(
+            "{}: {name} -> {}",
+            i18n::tui_exported(),
+            output_dir.display()
+        ))
+    } else {
+        Ok(i18n::tui_no_message().to_string())
+    }
+}
+
+/// Export the current message as a standalone HTML file.
+fn export_current_html(app: &mut App, output_dir: &PathBuf) -> anyhow::Result<String> {
+    std::fs::create_dir_all(output_dir)?;
+
+    if let (Some(entry), Some(body)) = (app.current_entry().cloned(), app.current_body.clone()) {
+        let path = crate::export::html::export_html(&entry, &body, output_dir)?;
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("message.html");
         Ok(format!(
             "{}: {name} -> {}",
             i18n::tui_exported(),

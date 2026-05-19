@@ -239,6 +239,10 @@ pub struct App {
     pub list_viewport_height: usize,
     /// Cached viewport height for the message view (set during render).
     pub message_view_height: usize,
+
+    /// Pending external HTML view request. When `Some`, the main loop should
+    /// suspend the TUI, run the configured viewer on the temp file, then resume.
+    pub pending_html_view: Option<PathBuf>,
 }
 
 impl App {
@@ -319,6 +323,7 @@ impl App {
             status_message: None,
             list_viewport_height: 20,
             message_view_height: 20,
+            pending_html_view: None,
         };
 
         // Sort by date descending and load first message
@@ -520,6 +525,32 @@ impl App {
     /// Set a transient status message that auto-clears after a few seconds.
     pub fn set_status(&mut self, msg: &str) {
         self.status_message = Some((msg.to_string(), std::time::Instant::now()));
+    }
+
+    /// Request the main loop to open the current message's HTML body in
+    /// the external viewer configured via `MBOXSHELL_HTML_VIEWER`
+    /// (defaults to `w3m`). Writes the HTML to a temp file and stores
+    /// the path in `pending_html_view`; the loop performs the spawn so
+    /// it can suspend/restore the terminal correctly.
+    pub fn request_external_html_view(&mut self) {
+        let html = match self.current_body.as_ref().and_then(|b| b.html.as_deref()) {
+            Some(h) => h.to_string(),
+            None => {
+                self.set_status(i18n::tui_no_html_part());
+                return;
+            }
+        };
+        let mut path = std::env::temp_dir();
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        path.push(format!("mboxshell-{}-{}.html", std::process::id(), stamp));
+        if let Err(e) = std::fs::write(&path, html) {
+            self.set_status(&format!("{}: {e}", i18n::tui_export_error()));
+            return;
+        }
+        self.pending_html_view = Some(path);
     }
 
     /// Called every tick: clears expired status messages.

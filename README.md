@@ -322,6 +322,13 @@ src/
 
 ## Changelog
 
+### v0.3.2
+- HTML rendering: the built-in message view now uses the `html2text` crate, so tables, lists, headings and links render properly (#1).
+- New `H` shortcut: opens the current message's HTML body in an external viewer (configurable via `MBOXSHELL_HTML_VIEWER`, defaults to `w3m`; works with `chawan`, `lynx -dump`, `pandoc`, etc.). The TUI suspends the alternate screen while the viewer runs and restores it cleanly on exit (#1).
+- New `html` export format: `mbox-tui export ... --format html` and a new HTML option in the export popup. Produces a standalone HTML page with the headers in a table and the original HTML body (or `<pre>`-wrapped text) (#1).
+- Search bar now shows an inline syntax cheatsheet (`from: to: subject: body: date:` …) while empty, so the query language is discoverable without reading docs (#1).
+- New `--qp` flag on `export ... --format eml`: re-encodes 8-bit text bodies as quoted-printable so the resulting EML is pure 7-bit ASCII. Helps strict-UTF-8 tools like `eml-extractor` and `emlAnalyzer`. Only applies to single-part text messages; multipart messages are left untouched (#1).
+
 ### v0.3.1
 - Fix: search bar registered every keystroke and pasted character twice on Windows Terminal and terminals with the kitty keyboard protocol (#2). Key events are now filtered on `KeyEventKind::Press`.
 - Fix: in fullscreen layout (`1`), pressing `Tab`/`Enter` on a message now shows the message view full-screen and `Tab`/`Esc` returns to the list (#1). Previously focus moved but nothing visible changed.

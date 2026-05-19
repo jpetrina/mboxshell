@@ -387,6 +387,12 @@ msg!(
     "Plain text with headers",
     "Texto plano con cabeceras"
 );
+msg!(tui_export_html, "HTML", "HTML");
+msg!(
+    tui_export_html_desc,
+    "Standalone HTML page",
+    "P\u{e1}gina HTML aut\u{f3}noma"
+);
 msg!(tui_export_csv, "CSV", "CSV");
 msg!(
     tui_export_csv_desc,
@@ -480,6 +486,31 @@ msg!(
 msg!(tui_exported, "Exported", "Exportado");
 msg!(tui_exported_csv, "message(s) as CSV", "mensaje(s) como CSV");
 msg!(tui_history, "history", "historial");
+msg!(
+    tui_search_hint,
+    "from: to: subject: body: date: before: after: has:attachment label: size:>1mb  (Enter to run, F for form)",
+    "from: to: subject: body: date: before: after: has:attachment label: size:>1mb  (Enter para buscar, F formulario)"
+);
+msg!(
+    tui_no_html_part,
+    "No HTML part in this message",
+    "No hay parte HTML en este mensaje"
+);
+msg!(
+    tui_html_viewer_failed,
+    "External HTML viewer failed",
+    "El visor HTML externo fall\u{f3}"
+);
+msg!(
+    tui_html_viewer_hint,
+    "Set MBOXSHELL_HTML_VIEWER to choose (e.g. 'w3m', 'chawan', 'lynx -dump')",
+    "Define MBOXSHELL_HTML_VIEWER para elegir (p.ej. 'w3m', 'chawan', 'lynx -dump')"
+);
+msg!(
+    tui_exported_html,
+    "message(s) as HTML",
+    "mensaje(s) como HTML"
+);
 
 // ── CLI strings ─────────────────────────────────────────────────
 
@@ -493,6 +524,8 @@ msg!(cli_eml_files, ".eml file(s)", "fichero(s) .eml");
 msg!(cli_exported_csv, "Exported CSV to", "CSV exportado en");
 msg!(cli_exported_txt, "Exported", "Exportado");
 msg!(cli_txt_files, ".txt file(s)", "fichero(s) .txt");
+msg!(cli_exported_html, "Exported", "Exportado");
+msg!(cli_html_files, ".html file(s)", "fichero(s) .html");
 msg!(
     cli_unknown_format,
     "Unknown export format",
@@ -500,8 +533,8 @@ msg!(
 );
 msg!(
     cli_supported_formats,
-    "Supported: eml, csv, txt",
-    "Soportados: eml, csv, txt"
+    "Supported: eml, csv, txt, html",
+    "Soportados: eml, csv, txt, html"
 );
 msg!(
     cli_merge_complete,

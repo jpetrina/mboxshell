@@ -3,5 +3,6 @@
 pub mod attachment;
 pub mod csv;
 pub mod eml;
+pub mod html;
 pub mod mbox;
 pub mod text;

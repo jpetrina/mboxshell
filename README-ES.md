@@ -322,6 +322,13 @@ src/
 
 ## Changelog
 
+### v0.3.2
+- Renderizado HTML: la vista interna del mensaje ahora usa el crate `html2text`, por lo que tablas, listas, encabezados y enlaces se ven correctamente (#1).
+- Nuevo atajo `H`: abre el cuerpo HTML del mensaje actual en un visor externo (configurable con `MBOXSHELL_HTML_VIEWER`, por defecto `w3m`; funciona con `chawan`, `lynx -dump`, `pandoc`, etc.). La TUI suspende la pantalla alternativa mientras corre el visor y la restaura al salir (#1).
+- Nuevo formato de exportación `html`: `mbox-tui export ... --format html` y una nueva opción HTML en el popup de exportación. Produce una página HTML autocontenida con los headers en una tabla y el cuerpo HTML original (o texto envuelto en `<pre>`) (#1).
+- La barra de búsqueda ahora muestra una chuleta de sintaxis en línea (`from: to: subject: body: date:` …) cuando está vacía, para que el lenguaje de búsqueda sea descubrible sin leer la documentación (#1).
+- Nuevo flag `--qp` en `export ... --format eml`: re-codifica los cuerpos de texto de 8 bits como quoted-printable, de modo que el EML resultante es ASCII puro de 7 bits. Ayuda a herramientas estrictas con UTF-8 como `eml-extractor` y `emlAnalyzer`. Solo aplica a mensajes single-part de texto; los multipart se dejan intactos (#1).
+
 ### v0.3.1
 - Fix: la barra de búsqueda registraba dos veces cada tecla y cada carácter pegado en Windows Terminal y en terminales con el protocolo kitty (#2). Ahora los eventos se filtran por `KeyEventKind::Press`.
 - Fix: en el layout pantalla completa (`1`), pulsar `Tab`/`Enter` sobre un mensaje ahora muestra la vista del mensaje a pantalla completa y `Tab`/`Esc` vuelve a la lista (#1). Antes el foco cambiaba pero no se veía nada nuevo.

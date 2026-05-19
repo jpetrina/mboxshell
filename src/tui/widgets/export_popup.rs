@@ -9,12 +9,13 @@ use crate::tui::app::App;
 use crate::tui::theme::current_theme;
 
 /// Number of export options available.
-pub const EXPORT_OPTION_COUNT: usize = 4;
+pub const EXPORT_OPTION_COUNT: usize = 5;
 
 /// Available export options (localized).
 pub fn export_options() -> Vec<(&'static str, &'static str)> {
     vec![
         (i18n::tui_export_eml(), i18n::tui_export_eml_desc()),
+        (i18n::tui_export_html(), i18n::tui_export_html_desc()),
         (i18n::tui_export_txt(), i18n::tui_export_txt_desc()),
         (i18n::tui_export_csv(), i18n::tui_export_csv_desc()),
         (
