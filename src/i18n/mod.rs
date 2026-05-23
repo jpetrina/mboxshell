@@ -343,6 +343,7 @@ msg!(tui_hint_panel, "Panel", "Panel");
 msg!(tui_hint_help, "Help", "Ayuda");
 msg!(tui_hint_quit, "Quit", "Salir");
 msg!(tui_hint_search, "Search", "Buscar");
+msg!(tui_hint_filters, "Filters", "Filtros");
 msg!(tui_hint_open, "Open", "Abrir");
 msg!(tui_hint_sort, "Sort", "Ordenar");
 msg!(tui_hint_mark, "Mark", "Marcar");

@@ -70,6 +70,7 @@ fn build_hints(app: &App) -> Vec<(&'static str, &'static str)> {
         PanelFocus::MailList => {
             hints.push(("j/k", i18n::tui_hint_nav()));
             hints.push(("/", i18n::tui_hint_search()));
+            hints.push(("F", i18n::tui_hint_filters()));
             hints.push(("Enter", i18n::tui_hint_open()));
             hints.push(("s", i18n::tui_hint_sort()));
             hints.push(("Space", i18n::tui_hint_mark()));

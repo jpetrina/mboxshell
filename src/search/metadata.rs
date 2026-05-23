@@ -112,12 +112,18 @@ fn term_matches_entry(entry: &MailEntry, term: &SearchTerm) -> bool {
 }
 
 /// Case-insensitive text matching.
+///
+/// Both `Contains` and `Exact` use substring matching. The distinction is
+/// purely lexical: `Exact` originates from a quoted phrase (so the entire
+/// phrase, spaces included, is treated as a single needle), while
+/// `Contains` is a single bareword. This mirrors the semantics of the
+/// fulltext search and matches what users expect from search engines.
 fn matches_text(haystack: &str, op: &SearchOperator) -> bool {
     let haystack_lower = haystack.to_lowercase();
-    match op {
-        SearchOperator::Contains(needle) => haystack_lower.contains(needle),
-        SearchOperator::Exact(phrase) => haystack_lower == *phrase,
-    }
+    let needle = match op {
+        SearchOperator::Contains(s) | SearchOperator::Exact(s) => s,
+    };
+    haystack_lower.contains(needle)
 }
 
 /// Check if entry's date matches the date filter.
@@ -259,6 +265,36 @@ mod tests {
         let q = parse_query("from:alice OR from:bob");
         let results = search_metadata(&entries, &q);
         assert_eq!(results, vec![0, 1]);
+    }
+
+    #[test]
+    fn test_quoted_phrase_is_substring_in_metadata() {
+        // Regression for issue #4: quoted phrases must match by substring
+        // in metadata, mirroring fulltext behaviour. Previously `Exact`
+        // required full-string equality, so a quoted multi-word value
+        // produced by the Search Filters popup never matched anything.
+        let entries = vec![
+            make_entry("alice@x.com", "Monthly Report Q1", "2024-01-15"),
+            make_entry("bob@x.com", "Weekly Update", "2024-01-20"),
+        ];
+        let q = parse_query("subject:\"monthly report\"");
+        let results = search_metadata(&entries, &q);
+        assert_eq!(results, vec![0]);
+    }
+
+    #[test]
+    fn test_combined_text_and_multiword_subject() {
+        // Regression for issue #4: when the user fills both Text and Subject
+        // in the popup and Subject contains spaces, the popup must quote the
+        // value so it survives tokenization as a single phrase.
+        let entries = vec![
+            make_entry("alice@x.com", "Monthly Report Q1", "2024-01-15"),
+            make_entry("bob@x.com", "Monthly Update", "2024-01-20"),
+        ];
+        // Simulates what the popup now emits for Text="alice" + Subject="Monthly Report"
+        let q = parse_query("alice subject:\"Monthly Report\"");
+        let results = search_metadata(&entries, &q);
+        assert_eq!(results, vec![0]);
     }
 
     #[test]

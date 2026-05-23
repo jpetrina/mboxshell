@@ -322,50 +322,7 @@ src/
 
 ## Changelog
 
-### v0.3.2
-- HTML rendering: the built-in message view now uses the `html2text` crate, so tables, lists, headings and links render properly (#1).
-- New `H` shortcut: opens the current message's HTML body in an external viewer (configurable via `MBOXSHELL_HTML_VIEWER`, defaults to `w3m`; works with `chawan`, `lynx -dump`, `pandoc`, etc.). The TUI suspends the alternate screen while the viewer runs and restores it cleanly on exit (#1).
-- New `html` export format: `mbox-tui export ... --format html` and a new HTML option in the export popup. Produces a standalone HTML page with the headers in a table and the original HTML body (or `<pre>`-wrapped text). **HTML bodies are sanitized by default** (scripts, `on*` handlers, iframes, `javascript:` URLs stripped via the `ammonia` crate); pass `--raw-html` to keep the original markup for local archival (#1).
-- Search bar now shows an inline syntax cheatsheet (`from: to: subject: body: date:` …) while empty, so the query language is discoverable without reading docs (#1).
-- New `--qp` flag on `export ... --format eml`: re-encodes 8-bit text bodies as quoted-printable so the resulting EML is pure 7-bit ASCII. Helps strict-UTF-8 tools like `eml-extractor` and `emlAnalyzer`. **Works for both single-part and multipart messages** — the MIME tree is walked recursively and every text/* leaf is re-encoded in place (#1).
-- CI: bump `actions/checkout`, `actions/upload-artifact` and `actions/download-artifact` to v5 (native Node 24) ahead of GitHub's Sep 2026 Node 20 sunset.
-
-### v0.3.1
-- Fix: search bar registered every keystroke and pasted character twice on Windows Terminal and terminals with the kitty keyboard protocol (#2). Key events are now filtered on `KeyEventKind::Press`.
-- Fix: in fullscreen layout (`1`), pressing `Tab`/`Enter` on a message now shows the message view full-screen and `Tab`/`Esc` returns to the list (#1). Previously focus moved but nothing visible changed.
-- Fix: `.eml` export now reverses mboxrd `>From ` escaping and trims the trailing MBOX separator newline, producing files that are RFC 5322 compliant and accepted by standard parsers (#1).
-
-### v0.3.0
-- Search filter popup (`F`): visual form to build queries without remembering syntax (from, to, subject, date range, size, attachment, label)
-- Result counter in search bar: shows `(N / total)` while typing
-- Search history: Up/Down arrow keys in the search bar navigate previous queries, with `[history]` indicator
-- New help entries for `F` shortcut and search history hint
-- Complete EN/ES internationalization: all TUI and CLI strings (~150 translation keys), auto-detected from system locale or set with `--lang en|es`
-
-### v0.2.0
-- Incremental search: message list filters as you type (metadata fields only; full-text runs on Enter)
-- Dynamic message view title shows current mode: `[RAW]` or `[HEADERS]`
-- Proportional PageDown/Up scroll in message view (adapts to actual viewport height)
-- Improved thread indentation with vertical connectors (`│└`) and depth capped at 4 levels
-- Added full CLI commands reference to documentation
-
-### v0.1.2
-- Active panel border highlighted in cyan for clear focus indicator
-- Context-sensitive status bar: hints change depending on the focused panel
-- Version number displayed at the bottom-right corner
-- Help popup reorganized in multi-column layout (adapts to terminal width)
-- Help popup now shows app name, version, license and author
-
-### v0.1.0
-- Initial release
-- Streaming MBOX parser (handles 50 GB+ files without loading into memory)
-- Persistent binary index for instant re-opens
-- Full terminal UI with vi-style navigation and three layout modes
-- Gmail labels support (X-Gmail-Labels) with sidebar filtering
-- Advanced search: from:, to:, subject:, body:, date:, size:, has:attachment, label:
-- Conversation threading (JWZ algorithm)
-- Export to EML, TXT, CSV with attachment extraction
-- Bilingual interface (English / Spanish)
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ## License
 

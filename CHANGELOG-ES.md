@@ -1,0 +1,62 @@
+# Changelog
+
+Todos los cambios relevantes de mboxshell se documentan en este fichero.
+
+El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
+
+## v0.3.3
+
+- Fix: el popup de Filtros de Búsqueda (`F`) ahora entrecomilla los valores con espacios al construir la query interna, de modo que combinar `Text` + `Subject` (o cualquier par de filtros cuando uno contiene espacios) ya no rompe la consulta partiéndola en términos AND independientes (#4).
+- Fix: las frases entrecomilladas en la búsqueda por metadatos ahora usan coincidencia por substring en vez de igualdad estricta, igual que ya hacía la búsqueda fulltext y como cabe esperar de queries como `subject:"informe mensual"` (#4).
+- Nuevo: pista `F: Filtros` en el pie de la lista de mensajes para que el popup visual de filtros sea descubrible sin abrir la ayuda (#3).
+
+## v0.3.2
+
+- Renderizado HTML: la vista interna del mensaje ahora usa el crate `html2text`, por lo que tablas, listas, encabezados y enlaces se ven correctamente (#1).
+- Nuevo atajo `H`: abre el cuerpo HTML del mensaje actual en un visor externo (configurable con `MBOXSHELL_HTML_VIEWER`, por defecto `w3m`; funciona con `chawan`, `lynx -dump`, `pandoc`, etc.). La TUI suspende la pantalla alternativa mientras corre el visor y la restaura al salir (#1).
+- Nuevo formato de exportación `html`: `mbox-tui export ... --format html` y una nueva opción HTML en el popup de exportación. Produce una página HTML autocontenida con los headers en una tabla y el cuerpo HTML original (o texto envuelto en `<pre>`). **Los cuerpos HTML se sanitizan por defecto** (scripts, manejadores `on*`, iframes y URLs `javascript:` se eliminan vía el crate `ammonia`); usa `--raw-html` para conservar el markup original (solo recomendado para archivado local) (#1).
+- La barra de búsqueda ahora muestra una chuleta de sintaxis en línea (`from: to: subject: body: date:` …) cuando está vacía, para que el lenguaje de búsqueda sea descubrible sin leer la documentación (#1).
+- Nuevo flag `--qp` en `export ... --format eml`: re-codifica los cuerpos de texto de 8 bits como quoted-printable, de modo que el EML resultante es ASCII puro de 7 bits. Ayuda a herramientas estrictas con UTF-8 como `eml-extractor` y `emlAnalyzer`. **Funciona tanto para mensajes single-part como multipart** — el árbol MIME se recorre recursivamente y cada hoja text/* se re-codifica en su sitio (#1).
+- CI: bump de `actions/checkout`, `actions/upload-artifact` y `actions/download-artifact` a v5 (Node 24 nativo) antes del fin de Node 20 en GitHub (sep 2026).
+
+## v0.3.1
+
+- Fix: la barra de búsqueda registraba dos veces cada tecla y cada carácter pegado en Windows Terminal y en terminales con el protocolo kitty (#2). Ahora los eventos se filtran por `KeyEventKind::Press`.
+- Fix: en el layout pantalla completa (`1`), pulsar `Tab`/`Enter` sobre un mensaje ahora muestra la vista del mensaje a pantalla completa y `Tab`/`Esc` vuelve a la lista (#1). Antes el foco cambiaba pero no se veía nada nuevo.
+- Fix: la exportación a `.eml` ahora revierte el escapado mboxrd `>From ` y recorta el salto de línea separador del MBOX, produciendo ficheros conformes a RFC 5322 que aceptan los parsers estándar (#1).
+
+## v0.3.0
+
+- Popup de filtros de búsqueda (`F`): formulario visual para construir queries sin recordar la sintaxis (from, to, subject, rango de fechas, tamaño, adjuntos, etiqueta).
+- Contador de resultados en la barra de búsqueda: muestra `(N / total)` mientras escribes.
+- Historial de búsqueda: las teclas Arriba/Abajo en la barra de búsqueda navegan por consultas anteriores, con indicador `[history]`.
+- Nuevas entradas en la ayuda para el atajo `F` e historial de búsqueda.
+- Internacionalización completa EN/ES: todos los textos de la TUI y CLI (~150 claves de traducción), detección automática del idioma del sistema o selección manual con `--lang en|es`.
+
+## v0.2.0
+
+- Búsqueda incremental: la lista de mensajes se filtra mientras escribes (solo campos de metadatos; búsqueda full-text se ejecuta al pulsar Enter).
+- Título dinámico en la vista de mensaje muestra el modo actual: `[RAW]` o `[HEADERS]`.
+- Scroll proporcional con PageDown/Up en la vista de mensaje (se adapta a la altura real del viewport).
+- Indentación mejorada en vista de hilos con conectores verticales (`│└`) y profundidad limitada a 4 niveles.
+- Referencia completa de comandos CLI añadida a la documentación.
+
+## v0.1.2
+
+- Borde del panel activo resaltado en cyan para indicar claramente el foco.
+- Barra de estado contextual: los atajos cambian según el panel enfocado.
+- Número de versión visible en la esquina inferior derecha.
+- Popup de ayuda reorganizado en columnas múltiples (se adapta al ancho del terminal).
+- Popup de ayuda muestra nombre de la app, versión, licencia y autor.
+
+## v0.1.0
+
+- Versión inicial.
+- Parser MBOX streaming (maneja archivos de 50 GB+ sin cargar en memoria).
+- Índice binario persistente para re-aperturas instantáneas.
+- Interfaz de terminal completa con navegación estilo vi y tres modos de layout.
+- Soporte de etiquetas Gmail (X-Gmail-Labels) con filtrado en panel lateral.
+- Búsqueda avanzada: `from:`, `to:`, `subject:`, `body:`, `date:`, `size:`, `has:attachment`, `label:`.
+- Agrupación en conversaciones (algoritmo JWZ).
+- Exportación a EML, TXT, CSV con extracción de adjuntos.
+- Interfaz bilingüe (Inglés / Español).

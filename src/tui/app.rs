@@ -666,16 +666,16 @@ impl App {
         let mut parts: Vec<String> = Vec::new();
 
         if !self.filter_text.is_empty() {
-            parts.push(self.filter_text.clone());
+            parts.push(quote_if_needed(&self.filter_text));
         }
         if !self.filter_from.is_empty() {
-            parts.push(format!("from:{}", self.filter_from));
+            parts.push(format!("from:{}", quote_if_needed(&self.filter_from)));
         }
         if !self.filter_to.is_empty() {
-            parts.push(format!("to:{}", self.filter_to));
+            parts.push(format!("to:{}", quote_if_needed(&self.filter_to)));
         }
         if !self.filter_subject.is_empty() {
-            parts.push(format!("subject:{}", self.filter_subject));
+            parts.push(format!("subject:{}", quote_if_needed(&self.filter_subject)));
         }
 
         // Date range
@@ -708,7 +708,7 @@ impl App {
         // Label selector (0 = Any, skip)
         if self.filter_label_selected > 0 {
             if let Some(label) = self.all_labels.get(self.filter_label_selected - 1) {
-                parts.push(format!("label:{label}"));
+                parts.push(format!("label:{}", quote_if_needed(label)));
             }
         }
 
@@ -751,5 +751,37 @@ impl App {
         } else if self.selected >= self.list_scroll_offset + vp {
             self.list_scroll_offset = self.selected.saturating_sub(vp - 1);
         }
+    }
+}
+
+/// Quote a filter value if it contains whitespace, so it survives query
+/// tokenization as a single phrase. Values that already contain a double
+/// quote are returned as-is to avoid producing malformed queries.
+fn quote_if_needed(value: &str) -> String {
+    if value.contains('"') || !value.chars().any(char::is_whitespace) {
+        value.to_string()
+    } else {
+        format!("\"{value}\"")
+    }
+}
+
+#[cfg(test)]
+mod build_query_tests {
+    use super::quote_if_needed;
+
+    #[test]
+    fn quote_if_needed_no_spaces() {
+        assert_eq!(quote_if_needed("hello"), "hello");
+    }
+
+    #[test]
+    fn quote_if_needed_with_spaces() {
+        assert_eq!(quote_if_needed("monthly report"), "\"monthly report\"");
+    }
+
+    #[test]
+    fn quote_if_needed_preexisting_quote_passthrough() {
+        // Already quoted or contains a quote — don't re-wrap.
+        assert_eq!(quote_if_needed("\"already\""), "\"already\"");
     }
 }

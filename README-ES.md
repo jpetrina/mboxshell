@@ -322,50 +322,7 @@ src/
 
 ## Changelog
 
-### v0.3.2
-- Renderizado HTML: la vista interna del mensaje ahora usa el crate `html2text`, por lo que tablas, listas, encabezados y enlaces se ven correctamente (#1).
-- Nuevo atajo `H`: abre el cuerpo HTML del mensaje actual en un visor externo (configurable con `MBOXSHELL_HTML_VIEWER`, por defecto `w3m`; funciona con `chawan`, `lynx -dump`, `pandoc`, etc.). La TUI suspende la pantalla alternativa mientras corre el visor y la restaura al salir (#1).
-- Nuevo formato de exportación `html`: `mbox-tui export ... --format html` y una nueva opción HTML en el popup de exportación. Produce una página HTML autocontenida con los headers en una tabla y el cuerpo HTML original (o texto envuelto en `<pre>`). **Los cuerpos HTML se sanitizan por defecto** (scripts, manejadores `on*`, iframes y URLs `javascript:` se eliminan vía el crate `ammonia`); usa `--raw-html` para conservar el markup original (solo recomendado para archivado local) (#1).
-- La barra de búsqueda ahora muestra una chuleta de sintaxis en línea (`from: to: subject: body: date:` …) cuando está vacía, para que el lenguaje de búsqueda sea descubrible sin leer la documentación (#1).
-- Nuevo flag `--qp` en `export ... --format eml`: re-codifica los cuerpos de texto de 8 bits como quoted-printable, de modo que el EML resultante es ASCII puro de 7 bits. Ayuda a herramientas estrictas con UTF-8 como `eml-extractor` y `emlAnalyzer`. **Funciona tanto para mensajes single-part como multipart** — el árbol MIME se recorre recursivamente y cada hoja text/* se re-codifica en su sitio (#1).
-- CI: bump de `actions/checkout`, `actions/upload-artifact` y `actions/download-artifact` a v5 (Node 24 nativo) antes del fin de Node 20 en GitHub (sep 2026).
-
-### v0.3.1
-- Fix: la barra de búsqueda registraba dos veces cada tecla y cada carácter pegado en Windows Terminal y en terminales con el protocolo kitty (#2). Ahora los eventos se filtran por `KeyEventKind::Press`.
-- Fix: en el layout pantalla completa (`1`), pulsar `Tab`/`Enter` sobre un mensaje ahora muestra la vista del mensaje a pantalla completa y `Tab`/`Esc` vuelve a la lista (#1). Antes el foco cambiaba pero no se veía nada nuevo.
-- Fix: la exportación a `.eml` ahora revierte el escapado mboxrd `>From ` y recorta el salto de línea separador del MBOX, produciendo ficheros conformes a RFC 5322 que aceptan los parsers estándar (#1).
-
-### v0.3.0
-- Popup de filtros de busqueda (`F`): formulario visual para construir queries sin recordar la sintaxis (from, to, subject, rango de fechas, tamano, adjuntos, etiqueta)
-- Contador de resultados en la barra de busqueda: muestra `(N / total)` mientras escribes
-- Historial de busqueda: las teclas Arriba/Abajo en la barra de busqueda navegan por consultas anteriores, con indicador `[history]`
-- Nuevas entradas en la ayuda para el atajo `F` e historial de busqueda
-- Internacionalizacion completa EN/ES: todos los textos de la TUI y CLI (~150 claves de traduccion), deteccion automatica del idioma del sistema o seleccion manual con `--lang en|es`
-
-### v0.2.0
-- Busqueda incremental: la lista de mensajes se filtra mientras escribes (solo campos de metadatos; busqueda full-text se ejecuta al pulsar Enter)
-- Titulo dinamico en la vista de mensaje muestra el modo actual: `[RAW]` o `[HEADERS]`
-- Scroll proporcional con PageDown/Up en la vista de mensaje (se adapta a la altura real del viewport)
-- Indentacion mejorada en vista de hilos con conectores verticales (`│└`) y profundidad limitada a 4 niveles
-- Referencia completa de comandos CLI anadida a la documentacion
-
-### v0.1.2
-- Borde del panel activo resaltado en cyan para indicar claramente el foco
-- Barra de estado contextual: los atajos cambian segun el panel enfocado
-- Numero de version visible en la esquina inferior derecha
-- Popup de ayuda reorganizado en columnas multiples (se adapta al ancho del terminal)
-- Popup de ayuda muestra nombre de la app, version, licencia y autor
-
-### v0.1.0
-- Version inicial
-- Parser MBOX streaming (maneja archivos de 50 GB+ sin cargar en memoria)
-- Indice binario persistente para re-aperturas instantaneas
-- Interfaz de terminal completa con navegacion estilo vi y tres modos de layout
-- Soporte de etiquetas Gmail (X-Gmail-Labels) con filtrado en panel lateral
-- Busqueda avanzada: from:, to:, subject:, body:, date:, size:, has:attachment, label:
-- Agrupacion en conversaciones (algoritmo JWZ)
-- Exportacion a EML, TXT, CSV con extraccion de adjuntos
-- Interfaz bilingue (Ingles / Espanol)
+Consulta [CHANGELOG-ES.md](CHANGELOG-ES.md) (English: [CHANGELOG.md](CHANGELOG.md)) para el historial completo de versiones.
 
 ## Licencia
 
