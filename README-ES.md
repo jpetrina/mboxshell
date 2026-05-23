@@ -320,6 +320,15 @@ src/
 | `lru` | Cache de mensajes decodificados |
 | `tracing` | Logging estructurado |
 
+## Patrocinadores
+
+`mboxshell` se desarrolla en abierto y cuenta con el apoyo de:
+
+- **[Colorvivo](https://colorvivo.com)** — expertos en WordPress, IA y medios de comunicación.
+- **[Stackscale](https://www.stackscale.com)** — expertos en infraestructura cloud privado.
+
+Si tu empresa usa `mboxshell` y quiere apoyar su desarrollo, consulta [`.github/FUNDING.yml`](.github/FUNDING.yml) o escribe a través de [carrero.es](https://carrero.es).
+
 ## Changelog
 
 Consulta [CHANGELOG-ES.md](CHANGELOG-ES.md) (English: [CHANGELOG.md](CHANGELOG.md)) para el historial completo de versiones.

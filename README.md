@@ -320,6 +320,15 @@ src/
 | `lru` | Decoded message cache |
 | `tracing` | Structured logging |
 
+## Sponsors
+
+`mboxshell` is developed in the open and is supported by:
+
+- **[Colorvivo](https://colorvivo.com)** — experts in WordPress, AI and digital media.
+- **[Stackscale](https://www.stackscale.com)** — experts in private cloud infrastructure.
+
+If your company finds `mboxshell` useful and wants to support its continued development, see [`.github/FUNDING.yml`](.github/FUNDING.yml) or reach out via [carrero.es](https://carrero.es).
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for the full release history.

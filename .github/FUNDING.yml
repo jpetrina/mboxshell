@@ -1,0 +1,5 @@
+# GitHub funding configuration — surfaces a "Sponsor" button on the repo.
+# Only URLs are rendered here; descriptions and logos live in the README.
+custom:
+  - https://colorvivo.com
+  - https://www.stackscale.com
