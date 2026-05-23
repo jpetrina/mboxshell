@@ -324,6 +324,19 @@ src/
 
 `mboxshell` se desarrolla en abierto y cuenta con el apoyo de:
 
+<p align="left">
+  <a href="https://colorvivo.com">
+    <img src="https://colorvivo.com/wp-content/uploads/2023/11/logo_color.png" alt="Colorvivo" height="70">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.stackscale.com">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://www.stackscale.com/wp-content/uploads/2019/12/Stackscale-GrupoAire-web-mini.png">
+      <img src="https://www.stackscale.com/wp-content/uploads/2023/11/Stackscale-GrupoAire-web-mini-negro.png" alt="Stackscale" height="50">
+    </picture>
+  </a>
+</p>
+
 - **[Colorvivo](https://colorvivo.com)** — expertos en WordPress, IA y medios de comunicación.
 - **[Stackscale](https://www.stackscale.com)** — expertos en infraestructura cloud privado.
 
