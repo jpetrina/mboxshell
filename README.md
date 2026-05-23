@@ -324,7 +324,7 @@ src/
 
 `mboxshell` is developed in the open and is supported by:
 
-<p align="left">
+<p align="center">
   <a href="https://colorvivo.com">
     <img src="https://colorvivo.com/wp-content/uploads/2023/11/logo_color.png" alt="Colorvivo" height="70">
   </a>
