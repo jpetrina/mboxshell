@@ -368,6 +368,12 @@ msg!(tui_filter_attachment, "Attachment:", "Adjunto:");
 msg!(tui_filter_has_attachment, "Has attachment", "Con adjunto");
 msg!(tui_filter_label, "Label:", "Etiqueta:");
 msg!(tui_filter_any, "Any", "Cualquiera");
+msg!(tui_filter_within_label, "Scope:", "\u{c1}mbito:");
+msg!(
+    tui_filter_within_results,
+    "Search within previous results",
+    "Buscar en los resultados anteriores"
+);
 msg!(
     tui_filter_footer,
     "Tab:Next  Shift-Tab:Prev  Space:Toggle  Enter:Search  Esc:Cancel",

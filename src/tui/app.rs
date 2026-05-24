@@ -50,6 +50,7 @@ pub enum SearchFilterField {
     Size,
     HasAttachment,
     Label,
+    WithinResults,
 }
 
 impl SearchFilterField {
@@ -67,23 +68,18 @@ impl SearchFilterField {
                 if has_labels {
                     Self::Label
                 } else {
-                    Self::Text
+                    Self::WithinResults
                 }
             }
-            Self::Label => Self::Text,
+            Self::Label => Self::WithinResults,
+            Self::WithinResults => Self::Text,
         }
     }
 
     /// Move to the previous field (Shift-Tab).
     pub fn prev(self, has_labels: bool) -> Self {
         match self {
-            Self::Text => {
-                if has_labels {
-                    Self::Label
-                } else {
-                    Self::HasAttachment
-                }
-            }
+            Self::Text => Self::WithinResults,
             Self::From => Self::Text,
             Self::To => Self::From,
             Self::Subject => Self::To,
@@ -92,6 +88,13 @@ impl SearchFilterField {
             Self::Size => Self::DateTo,
             Self::HasAttachment => Self::Size,
             Self::Label => Self::HasAttachment,
+            Self::WithinResults => {
+                if has_labels {
+                    Self::Label
+                } else {
+                    Self::HasAttachment
+                }
+            }
         }
     }
 
@@ -213,6 +216,8 @@ pub struct App {
     pub filter_has_attachment: bool,
     /// Selected index in the label selector (0 = Any, 1..N = labels).
     pub filter_label_selected: usize,
+    /// Whether the "search within previous results" checkbox is checked.
+    pub filter_within_results: bool,
 
     // ── Search history ───────────────────────
     /// Recent search queries, most recent first.
@@ -313,6 +318,7 @@ impl App {
             filter_size_selected: 0,
             filter_has_attachment: false,
             filter_label_selected: 0,
+            filter_within_results: false,
             search_history: Vec::new(),
             search_history_index: None,
             search_draft: String::new(),
@@ -727,6 +733,7 @@ impl App {
         self.filter_size_selected = 0;
         self.filter_has_attachment = false;
         self.filter_label_selected = 0;
+        self.filter_within_results = false;
     }
 
     /// Push a query into the search history (most recent first, dedup, capped).
