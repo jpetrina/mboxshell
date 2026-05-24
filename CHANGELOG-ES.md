@@ -4,6 +4,10 @@ Todos los cambios relevantes de mboxshell se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
 
+## v0.3.4
+
+- Nuevo: casilla `Buscar en los resultados anteriores` en el popup de Filtros de Búsqueda (`F`). Al activarla, la nueva consulta se intersecta con lo que estuviera visible al abrir el popup, permitiendo refinar progresivamente un conjunto de resultados (#5).
+
 ## v0.3.3
 
 - Fix: el popup de Filtros de Búsqueda (`F`) ahora entrecomilla los valores con espacios al construir la query interna, de modo que combinar `Text` + `Subject` (o cualquier par de filtros cuando uno contiene espacios) ya no rompe la consulta partiéndola en términos AND independientes (#4).

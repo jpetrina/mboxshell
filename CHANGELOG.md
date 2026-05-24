@@ -4,6 +4,10 @@ All notable changes to mboxshell are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.4
+
+- Add: new `Search within previous results` checkbox in the Search Filters popup (`F`). When checked, the new query is intersected with whatever was visible at the moment the popup opened, allowing iterative narrowing of result sets (#5).
+
 ## v0.3.3
 
 - Fix: Search Filters popup (`F`) now quotes multi-word values when building the underlying query, so combining `Text` + `Subject` (or any other filter pair where one side has spaces) no longer splits the value across implicit AND terms (#4).
