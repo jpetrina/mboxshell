@@ -7,6 +7,10 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # Run bundled JavaScript actions (checkout, upload/download-artifact) on
+  # Node 24. Their v5 releases still ship Node 20, deprecated by GitHub and
+  # forced to Node 24 from 2026-06-02. This opts in early.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
   contents: write
