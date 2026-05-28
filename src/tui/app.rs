@@ -608,8 +608,19 @@ impl App {
     ///
     /// Supports field-specific queries (`from:`, `subject:`, `body:`, etc.),
     /// date/size filters, negation, and full-text body search.
+    ///
+    /// When a sidebar label filter is active, the search is restricted to the
+    /// messages bearing that label so the active scope is preserved.
     pub fn execute_search(&mut self) {
-        self.execute_search_restricted(None);
+        let restrict = self.active_label_filter.as_ref().map(|label| {
+            self.entries
+                .iter()
+                .enumerate()
+                .filter(|(_, e)| e.labels.iter().any(|l| l == label))
+                .map(|(i, _)| i)
+                .collect::<HashSet<usize>>()
+        });
+        self.execute_search_restricted(restrict);
     }
 
     /// Like [`execute_search`](Self::execute_search), but intersects the
@@ -625,7 +636,14 @@ impl App {
         self.cancel_search();
 
         if self.search_query.is_empty() {
-            self.visible_indices = (0..self.entries.len()).collect();
+            self.visible_indices = match &restrict {
+                Some(set) => {
+                    let mut v: Vec<usize> = set.iter().copied().collect();
+                    v.sort_unstable();
+                    v
+                }
+                None => (0..self.entries.len()).collect(),
+            };
             self.search_results.clear();
             self.apply_sort();
             if !self.visible_indices.is_empty() {
@@ -1047,5 +1065,57 @@ mod async_search_tests {
             !app.search_in_progress(),
             "cancel_search must drop the in-flight job"
         );
+    }
+
+    #[test]
+    fn search_respects_active_label_filter_scope() {
+        use std::sync::Arc;
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+
+        // Tag the first two entries with a label and activate the label filter,
+        // mirroring what apply_label_filter does in the TUI.
+        {
+            let entries = Arc::make_mut(&mut app.entries);
+            entries[0].labels.push("Inbox".to_string());
+            entries[1].labels.push("Inbox".to_string());
+        }
+        app.active_label_filter = Some("Inbox".to_string());
+        app.visible_indices = vec![0, 1];
+
+        // A metadata-only query that would match more than the scoped subset.
+        // With the bug, results contained every matching sender across the whole
+        // index; the fix restricts them to the active label scope.
+        app.search_query = "from:user".to_string();
+        app.execute_search();
+
+        assert!(
+            !app.search_in_progress(),
+            "metadata-only search must not spawn a worker"
+        );
+        assert!(
+            app.visible_indices.iter().all(|i| *i < 2),
+            "search results must stay within the active label scope, got {:?}",
+            app.visible_indices,
+        );
+    }
+
+    #[test]
+    fn empty_query_respects_active_label_filter_scope() {
+        use std::sync::Arc;
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+
+        {
+            let entries = Arc::make_mut(&mut app.entries);
+            entries[2].labels.push("Work".to_string());
+        }
+        app.active_label_filter = Some("Work".to_string());
+        app.visible_indices = vec![2];
+
+        // Pressing Enter on an empty query should leave the scope intact rather
+        // than fall back to "all entries".
+        app.search_query.clear();
+        app.execute_search();
+
+        assert_eq!(app.visible_indices, vec![2]);
     }
 }
