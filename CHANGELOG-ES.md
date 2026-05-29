@@ -4,6 +4,11 @@ Todos los cambios relevantes de mboxshell se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
 
+## v0.3.8
+
+- Añadido: `Shift+↑` / `Shift+↓` (y `Shift+RePág` / `Shift+AvPág`) ahora hacen scroll del cuerpo del mensaje seleccionado en el panel de previsualización sin salir de la lista de mensajes, de modo que puedes leer un correo largo manteniendo la navegación de la lista con las flechas normales (#8).
+- Cambiado: los atajos sueltos de la barra de estado ahora son consistentemente en minúscula — `F:Filtros` → `f` y `L:Etiquetas` → `l`. Las teclas `F`/`L` en mayúscula siguen funcionando como alias ocultos, así que la memoria muscular existente se mantiene (#9). Los atajos emparejados con Shift (`s`/`S`, `h`/`H`, `n`/`N`, `a`/`A`, `g`/`G`) no cambian.
+
 ## v0.3.7
 
 - Corregido: las búsquedas lanzadas desde la barra de búsqueda ahora respetan el filtro de etiqueta activo en la barra lateral. Cuando había una etiqueta seleccionada, escribir una consulta y pulsar `Enter` perdía el scope y buscaba contra todos los mensajes del índice; la barra ahora deriva un conjunto de restricción a partir de la etiqueta activa e intersecta los resultados con él (#7). El camino de consulta vacía honra el mismo scope, así que limpiar la consulta ya no escapa de la etiqueta.

@@ -4,6 +4,11 @@ All notable changes to mboxshell are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.3.8
+
+- Add: `Shift+↑` / `Shift+↓` (and `Shift+PageUp` / `Shift+PageDown`) now scroll the body of the currently selected message in the preview pane without leaving the message list, so you can read a long email while keeping list navigation under the plain arrow keys (#8).
+- Change: the standalone status-bar shortcuts are now consistently lowercase — `F:Filters` → `f` and `L:Labels` → `l`. The uppercase `F`/`L` keys still work as hidden aliases, so existing muscle memory keeps working (#9). Shift-paired shortcuts (`s`/`S`, `h`/`H`, `n`/`N`, `a`/`A`, `g`/`G`) are unchanged.
+
 ## v0.3.7
 
 - Fix: searches launched from the search bar now respect the active sidebar label filter. When a label was selected, typing a query and pressing `Enter` dropped the scope and matched against every message in the index; the bar now derives a restrict set from the active label and intersects results with it (#7). The empty-query path honours the same scope, so clearing the query no longer escapes the label.
