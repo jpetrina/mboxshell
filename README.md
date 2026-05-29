@@ -172,10 +172,11 @@ mboxshell completions fish > ~/.config/fish/completions/mboxshell.fish
 | `g` / `G` | First / last message |
 | `PgDn` / `PgUp` | Page down / up |
 | `Enter` | Open message / switch to message view |
+| `Shift-↑` / `Shift-↓` | Scroll selected message body (keeps list focus) |
 | `Tab` / `Shift-Tab` | Cycle panel focus |
 | `Esc` | Back to list / close popup |
 | `/` | Open search bar |
-| `F` | Open search filter popup |
+| `f` | Open search filter popup |
 | `n` / `N` | Next / previous search result |
 | `Space` | Mark / unmark message |
 | `*` | Mark / unmark all |
@@ -184,7 +185,7 @@ mboxshell completions fish > ~/.config/fish/completions/mboxshell.fish
 | `e` | Export message (EML, TXT, CSV, Attachments) |
 | `a` | Show attachments (j/k to navigate, Enter to save, A to save all) |
 | `t` | Toggle threaded (conversation) view |
-| `L` | Show / focus / hide labels sidebar |
+| `l` | Show / focus / hide labels sidebar |
 | `h` | Toggle full headers |
 | `r` | Toggle raw message source |
 | `1` / `2` / `3` | Layout: list only / horizontal split / vertical split |

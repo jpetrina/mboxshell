@@ -98,6 +98,10 @@ fn build_lines<'a>(
                 desc: i18n::tui_help_page_scroll(),
             },
             Shortcut {
+                key: "\u{21e7}\u{2191}/\u{2193}",
+                desc: i18n::tui_help_scroll_body(),
+            },
+            Shortcut {
                 key: "Enter",
                 desc: i18n::tui_help_open_message(),
             },
@@ -191,7 +195,7 @@ fn build_lines<'a>(
                 desc: i18n::tui_help_search_bar(),
             },
             Shortcut {
-                key: "F",
+                key: "f",
                 desc: i18n::tui_help_filter_popup(),
             },
             Shortcut {
@@ -228,7 +232,7 @@ fn build_lines<'a>(
                 desc: i18n::tui_help_layout_mode(),
             },
             Shortcut {
-                key: "L",
+                key: "l",
                 desc: i18n::tui_help_labels_sidebar(),
             },
             Shortcut {

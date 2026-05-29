@@ -91,8 +91,9 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.layout = LayoutMode::VerticalSplit;
             return Ok(());
         }
-        // L: toggle/focus sidebar (from any panel)
-        (_, KeyCode::Char('L')) => {
+        // l: toggle/focus sidebar (from any panel). Uppercase L kept as a
+        // hidden alias for backward compatibility.
+        (_, KeyCode::Char('l') | KeyCode::Char('L')) => {
             handle_sidebar_toggle(app);
             return Ok(());
         }
@@ -163,7 +164,26 @@ fn handle_sidebar_toggle(app: &mut App) {
 
 /// Key handling when the mail list panel has focus.
 fn handle_mail_list_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
+    let shift = key.modifiers.contains(KeyModifiers::SHIFT);
     match key.code {
+        // ── Scroll the selected message body without leaving the list ──
+        // Shift+Down / Shift+Up scroll the preview pane of the currently
+        // selected message while keeping focus on the list (issue #8).
+        KeyCode::Down if shift => {
+            app.message_scroll_offset += 1;
+        }
+        KeyCode::Up if shift => {
+            app.message_scroll_offset = app.message_scroll_offset.saturating_sub(1);
+        }
+        KeyCode::PageDown if shift => {
+            let page = app.message_view_height.max(1);
+            app.message_scroll_offset += page;
+        }
+        KeyCode::PageUp if shift => {
+            let page = app.message_view_height.max(1);
+            app.message_scroll_offset = app.message_scroll_offset.saturating_sub(page);
+        }
+
         // ── Navigation ───────────────────────────────────────
         KeyCode::Char('j') | KeyCode::Down => {
             if app.selected + 1 < app.visible_count() {
@@ -255,7 +275,8 @@ fn handle_mail_list_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
         KeyCode::Char('h') => app.show_full_headers = !app.show_full_headers,
         KeyCode::Char('H') => app.request_external_html_view(),
         KeyCode::Char('r') => app.show_raw = !app.show_raw,
-        KeyCode::Char('F') => {
+        // f opens the search-filter popup. Uppercase F kept as a hidden alias.
+        KeyCode::Char('f') | KeyCode::Char('F') => {
             app.reset_search_filters();
             app.show_search_filter = true;
         }

@@ -60,7 +60,7 @@ fn build_hints(app: &App) -> Vec<(&'static str, &'static str)> {
             hints.push(("j/k", i18n::tui_hint_nav()));
             hints.push(("Enter", i18n::tui_hint_select()));
             if !app.all_labels.is_empty() {
-                hints.push(("L", i18n::tui_hint_labels()));
+                hints.push(("l", i18n::tui_hint_labels()));
             }
             hints.push(("Esc", i18n::tui_hint_back()));
             hints.push(("Tab", i18n::tui_hint_panel()));
@@ -70,15 +70,16 @@ fn build_hints(app: &App) -> Vec<(&'static str, &'static str)> {
         PanelFocus::MailList => {
             hints.push(("j/k", i18n::tui_hint_nav()));
             hints.push(("/", i18n::tui_hint_search()));
-            hints.push(("F", i18n::tui_hint_filters()));
+            hints.push(("f", i18n::tui_hint_filters()));
             hints.push(("Enter", i18n::tui_hint_open()));
+            hints.push(("\u{21e7}\u{2191}\u{2193}", i18n::tui_hint_scroll_body()));
             hints.push(("s", i18n::tui_hint_sort()));
             hints.push(("Space", i18n::tui_hint_mark()));
             hints.push(("e", i18n::tui_hint_export()));
             hints.push(("a", i18n::tui_hint_attach()));
             hints.push(("t", i18n::tui_hint_thread()));
             if !app.all_labels.is_empty() {
-                hints.push(("L", i18n::tui_hint_labels()));
+                hints.push(("l", i18n::tui_hint_labels()));
             }
             hints.push(("Tab", i18n::tui_hint_panel()));
             hints.push(("?", i18n::tui_hint_help()));

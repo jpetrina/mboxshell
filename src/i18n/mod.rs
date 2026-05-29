@@ -299,6 +299,11 @@ msg!(
 msg!(tui_help_next_prev, "Next / prev", "Siguiente / anterior");
 msg!(tui_help_first_last, "First / last", "Primero / \u{fa}ltimo");
 msg!(tui_help_page_scroll, "Page scroll", "Avance de p\u{e1}gina");
+msg!(
+    tui_help_scroll_body,
+    "Scroll body (keep list focus)",
+    "Scroll cuerpo (mantiene foco lista)"
+);
 msg!(tui_help_open_message, "Open message", "Abrir mensaje");
 msg!(tui_help_cycle_panel, "Cycle panel", "Cambiar panel");
 msg!(tui_help_back_close, "Back / close", "Atr\u{e1}s / cerrar");
@@ -351,6 +356,7 @@ msg!(tui_hint_export, "Export", "Exportar");
 msg!(tui_hint_attach, "Attach", "Adjuntos");
 msg!(tui_hint_thread, "Thread", "Hilo");
 msg!(tui_hint_scroll, "Scroll", "Scroll");
+msg!(tui_hint_scroll_body, "Scroll body", "Scroll cuerpo");
 msg!(tui_hint_headers, "Headers", "Cabeceras");
 msg!(tui_hint_raw, "Raw", "Raw");
 msg!(tui_hint_cancel, "Cancel", "Cancelar");
