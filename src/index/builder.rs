@@ -25,6 +25,17 @@ pub fn build_index(
     force_rebuild: bool,
     progress: Option<&dyn Fn(u64, u64)>,
 ) -> anyhow::Result<Vec<MailEntry>> {
+    build_index_cancelable(mbox_path, force_rebuild, progress, &|| false)
+}
+
+/// Como [`build_index`] pero cancelable: `should_cancel` se consulta por cada mensaje; si
+/// devuelve `true`, el parseo se detiene, NO se escribe índice parcial y se devuelve un error.
+pub fn build_index_cancelable(
+    mbox_path: &Path,
+    force_rebuild: bool,
+    progress: Option<&dyn Fn(u64, u64)>,
+    should_cancel: &dyn Fn() -> bool,
+) -> anyhow::Result<Vec<MailEntry>> {
     if !force_rebuild {
         if let Some(entries) = load_index(mbox_path)? {
             debug!(
@@ -44,6 +55,9 @@ pub fn build_index(
 
     parser.parse_headers_only(
         &mut |offset, length, header_bytes| {
+            if should_cancel() {
+                return false; // detiene el parseo
+            }
             match header::parse_headers_to_entry(header_bytes, offset, length, sequence) {
                 Ok(entry) => {
                     entries.push(entry);
@@ -57,6 +71,10 @@ pub fn build_index(
         },
         progress,
     )?;
+
+    if should_cancel() {
+        anyhow::bail!("indexing cancelled");
+    }
 
     // Write the index file
     if let Err(e) = write_index(mbox_path, &entries) {
