@@ -56,7 +56,7 @@ Descarga la ultima version para tu plataforma desde la pagina de [Releases](http
 | macOS Intel | `mboxshell-macos-x86_64` |
 | macOS Apple Silicon | `mboxshell-macos-aarch64` |
 | Windows x86_64 | `mboxshell-windows-x86_64.exe` |
-| Windows ARM64 | `mboxshell-windows-aarch64.exe` |
+| Windows ARM64 | `mboxshell-windows-arm64.exe` |
 
 Tras descargar, dale permisos de ejecucion y muevelo a tu PATH:
 
@@ -146,10 +146,10 @@ mboxshell completions fish > ~/.config/fish/completions/mboxshell.fish
 | `mboxshell index <ruta> [-f/--force]` | Construir o reconstruir el indice binario |
 | `mboxshell stats <ruta> [--json]` | Mostrar estadisticas de un archivo MBOX |
 | `mboxshell search <ruta> <consulta> [--json]` | Buscar mensajes desde la linea de comandos |
-| `mboxshell export <ruta> -f <formato> -o <salida> [--query <q>]` | Exportar mensajes (formatos: eml, csv, txt) |
+| `mboxshell export <ruta> -f <formato> -o <salida> [--query <q>]` | Exportar mensajes (formatos: eml, csv, txt, html) |
 | `mboxshell merge <archivos...> -o <salida> [--dedup]` | Combinar varios archivos MBOX en uno |
 | `mboxshell attachments <ruta> -o <salida>` | Extraer todos los adjuntos |
-| `mboxshell completions <shell>` | Generar completions de shell (bash, zsh, fish, powershell) |
+| `mboxshell completions <shell>` | Generar completions de shell (bash, zsh, fish, powershell, elvish) |
 | `mboxshell manpage` | Generar pagina de manual |
 
 **Flags globales:**
@@ -197,9 +197,13 @@ mboxshell completions fish > ~/.config/fish/completions/mboxshell.fish
 ```
 from:usuario@gmail.com              Buscar por remitente
 to:destino@empresa.com              Buscar por destinatario
+cc:copia@empresa.com                Buscar por destinatario en copia (Cc)
 subject:factura                     Buscar en el asunto
 body:texto importante               Buscar en el cuerpo del mensaje
+filename:informe.pdf                Buscar por nombre de adjunto
+id:<message-id@dominio>             Buscar por Message-ID
 has:attachment                      Solo mensajes con adjuntos
+has:no-attachment                   Solo mensajes sin adjuntos
 label:Inbox                         Filtrar por etiqueta de Gmail
 date:2024-01                        Mensajes de enero 2024
 date:2024-01-01..2024-06-30         Rango de fechas
@@ -246,7 +250,7 @@ log_level = "warn"
 [display]
 theme = "dark"
 layout = "horizontal"
-show_sidebar = true
+show_sidebar = false
 max_cached_messages = 50
 
 [export]
@@ -342,6 +346,13 @@ src/
 - **[Stackscale](https://www.stackscale.com)** — expertos en infraestructura cloud privado.
 
 Si tu empresa usa `mboxshell` y quiere apoyar su desarrollo, consulta [`.github/FUNDING.yml`](.github/FUNDING.yml) o escribe a través de [carrero.es](https://carrero.es).
+
+## Documentación
+
+El manual de usuario completo cubre todos los comandos, atajos de teclado, operadores de búsqueda, opciones de exportación y claves de configuración:
+
+- [docs/MANUAL-ES.md](docs/MANUAL-ES.md) — Manual de usuario (Español)
+- [docs/MANUAL.md](docs/MANUAL.md) — User manual (English)
 
 ## Changelog
 
