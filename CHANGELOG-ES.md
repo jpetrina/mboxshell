@@ -4,6 +4,12 @@ Todos los cambios relevantes de mboxshell se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
 
+## v0.4.0
+
+- Añadido: la vista previa del mensaje ahora muestra un **indicador de posición de scroll** en la esquina inferior derecha de su borde, para saber de un vistazo si el cuerpo se puede desplazar y por dónde vas — `[ Todo ]` cuando cabe entero, `[ ↓ Inicio ]` al principio, `[ ↕ NN% ]` en medio y `[ ↑ Fin ]` al final (#10).
+- Corregido: **«buscar dentro de resultados previos» ahora funciona de forma fiable en todo el flujo.** El interruptor se reiniciaba en silencio cada vez que se reabría el popup de filtros, así que refinar un conjunto de resultados con un segundo campo (p. ej. una búsqueda de Texto/cuerpo tras una de Asunto) volvía a escanear el índice completo. Ahora es un modo de ámbito persistente respetado por todos los puntos de búsqueda, y solo se descarta cuando el ámbito se reinicia de verdad — al cambiar el filtro de etiqueta o salir de la búsqueda con `Esc` (#11).
+- Añadido: `build_index_cancelable()` — variante cancelable de la construcción del índice que consulta un callback `should_cancel` por cada mensaje y aborta sin escribir un índice parcial, para integraciones que necesitan interrumpir un indexado largo (p. ej. la app de macOS). `build_index()` no cambia y es totalmente retrocompatible.
+
 ## v0.3.8
 
 - Añadido: `Shift+↑` / `Shift+↓` (y `Shift+RePág` / `Shift+AvPág`) ahora hacen scroll del cuerpo del mensaje seleccionado en el panel de previsualización sin salir de la lista de mensajes, de modo que puedes leer un correo largo manteniendo la navegación de la lista con las flechas normales (#8).

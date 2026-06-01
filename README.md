@@ -172,7 +172,7 @@ mboxshell completions fish > ~/.config/fish/completions/mboxshell.fish
 | `g` / `G` | First / last message |
 | `PgDn` / `PgUp` | Page down / up |
 | `Enter` | Open message / switch to message view |
-| `Shift-↑` / `Shift-↓` | Scroll selected message body (keeps list focus) |
+| `Shift-↑` / `Shift-↓` | Scroll selected message body (keeps list focus); a position indicator (`Top` / `NN%` / `Bot`) shows in the message border |
 | `Tab` / `Shift-Tab` | Cycle panel focus |
 | `Esc` | Back to list / close popup |
 | `/` | Open search bar |

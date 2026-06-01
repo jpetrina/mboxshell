@@ -4,6 +4,12 @@ All notable changes to mboxshell are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.0
+
+- Add: the message preview now shows a **scroll position indicator** in the bottom-right of its border, so you can tell at a glance whether a body is scrollable and where you are in it — `[ All ]` when everything fits, `[ ↓ Top ]` at the start, `[ ↕ NN% ]` in the middle, and `[ ↑ Bot ]` at the end (#10).
+- Fix: **"search within previous results" now works reliably across the full flow.** The toggle was silently reset every time the filter popup reopened, so refining a previous result set with a second field (e.g. a Text/body search after a Subject search) fell back to scanning the whole index. It is now a persistent scoping mode honoured by every search entry point, and is dropped only when the scope itself resets — on a label-filter change or when leaving the search with `Esc` (#11).
+- Add: `build_index_cancelable()` — a cancelable variant of index building that polls a `should_cancel` callback per message and aborts without writing a partial index, for embedders that need to interrupt a long indexing run (e.g. the macOS app). `build_index()` is unchanged and fully backward compatible.
+
 ## v0.3.8
 
 - Add: `Shift+↑` / `Shift+↓` (and `Shift+PageUp` / `Shift+PageDown`) now scroll the body of the currently selected message in the preview pane without leaving the message list, so you can read a long email while keeping list navigation under the plain arrow keys (#8).
