@@ -534,3 +534,11 @@ In `<cache directory>/mboxshell.log`. Increase detail with `-v` / `-vv` / `-vvv`
 ---
 
 *See also: [README.md](../README.md) · [CHANGELOG.md](../CHANGELOG.md) · [MANUAL-ES.md](MANUAL-ES.md)*
+
+---
+
+## License
+
+MIT - Copyright (c) 2026 David Carrero Fernandez-Baillo - [https://carrero.es](https://carrero.es)
+
+Source Code: [https://github.com/dcarrero/mboxshell](https://github.com/dcarrero/mboxshell)
