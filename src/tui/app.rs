@@ -128,6 +128,22 @@ impl SearchFilterField {
         }
     }
 
+    /// First field in the modal (PageUp / Home jump target).
+    pub fn first() -> Self {
+        Self::Text
+    }
+
+    /// Last field in the modal (PageDown / End jump target).
+    pub fn last() -> Self {
+        Self::WithinResults
+    }
+
+    /// Whether this field is a horizontal selector whose value is changed with
+    /// Left/Right (and j/k), rather than a focus-navigation target for those keys.
+    pub fn is_selector(self) -> bool {
+        matches!(self, Self::Size | Self::Label)
+    }
+
     /// Whether this field accepts free-form text input.
     pub fn is_text_input(self) -> bool {
         matches!(
@@ -291,8 +307,14 @@ pub struct App {
     pub body_search_matches: Vec<BodyMatch>,
     /// Index into `body_search_matches` of the currently focused match.
     pub body_search_index: usize,
+    /// Set when the focused match changes (open / type / `n` / `N`). The next
+    /// render recomputes the scroll offset to bring the match into view, using
+    /// the real wrapped-row geometry it has access to. Centring here would be
+    /// wrong: the body wraps long lines, so a body-relative line index does not
+    /// equal its on-screen row.
+    pub body_search_recenter: bool,
     /// Absolute line index where the body starts within the message view,
-    /// cached during render so `scroll_to_active_match` can map a body-relative
+    /// cached during render so the match-recentre logic can map a body-relative
     /// match line to a scroll offset.
     pub body_line_start: usize,
 
@@ -393,6 +415,7 @@ impl App {
             body_search_query: String::new(),
             body_search_matches: Vec::new(),
             body_search_index: 0,
+            body_search_recenter: false,
             body_line_start: 0,
             should_quit: false,
             status_message: None,
@@ -1026,6 +1049,7 @@ impl App {
         self.body_search_query.clear();
         self.body_search_matches.clear();
         self.body_search_index = 0;
+        self.body_search_recenter = false;
     }
 
     /// Clear all in-body search state (query, matches, prompt).
@@ -1034,6 +1058,7 @@ impl App {
         self.body_search_query.clear();
         self.body_search_matches.clear();
         self.body_search_index = 0;
+        self.body_search_recenter = false;
     }
 
     /// Recompute the list of matches for the current query against the body
@@ -1061,39 +1086,28 @@ impl App {
                 });
             }
         }
-        self.scroll_to_active_match();
+        self.body_search_recenter = true;
     }
 
-    /// Move the focus to the next match (wrapping around) and scroll to it.
+    /// Move the focus to the next match (wrapping around) and request a scroll
+    /// that brings it into view on the next render.
     pub fn body_search_next(&mut self) {
         if self.body_search_matches.is_empty() {
             return;
         }
         self.body_search_index = (self.body_search_index + 1) % self.body_search_matches.len();
-        self.scroll_to_active_match();
+        self.body_search_recenter = true;
     }
 
-    /// Move the focus to the previous match (wrapping around) and scroll to it.
+    /// Move the focus to the previous match (wrapping around) and request a
+    /// scroll that brings it into view on the next render.
     pub fn body_search_prev(&mut self) {
         if self.body_search_matches.is_empty() {
             return;
         }
         let len = self.body_search_matches.len();
         self.body_search_index = (self.body_search_index + len - 1) % len;
-        self.scroll_to_active_match();
-    }
-
-    /// Scroll the message view so the focused match sits near the vertical
-    /// centre of the viewport. Approximate: the offset counts unwrapped lines
-    /// while the paragraph scrolls over wrapped ones, matching the existing
-    /// scroll indicator's precision.
-    fn scroll_to_active_match(&mut self) {
-        let Some(m) = self.body_search_matches.get(self.body_search_index) else {
-            return;
-        };
-        let absolute = self.body_line_start + m.line;
-        let half = self.message_view_height / 2;
-        self.message_scroll_offset = absolute.saturating_sub(half);
+        self.body_search_recenter = true;
     }
 }
 
@@ -1214,12 +1228,30 @@ mod body_search_tests {
 
         app.body_search_next();
         assert_eq!(app.body_search_index, 1);
+        assert!(
+            app.body_search_recenter,
+            "moving to a match requests a recentre on the next render"
+        );
         app.body_search_next();
         app.body_search_next();
         assert_eq!(app.body_search_index, 0, "next wraps past the end");
 
         app.body_search_prev();
         assert_eq!(app.body_search_index, 2, "prev wraps before the start");
+        assert!(app.body_search_recenter);
+    }
+
+    #[test]
+    fn next_prev_on_empty_matches_do_not_request_recenter() {
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+        app.body_search_matches.clear();
+        app.body_search_recenter = false;
+        app.body_search_next();
+        app.body_search_prev();
+        assert!(
+            !app.body_search_recenter,
+            "no matches means nothing to scroll to"
+        );
     }
 
     #[test]
@@ -1234,11 +1266,13 @@ mod body_search_tests {
         }];
         app.body_search_index = 0;
 
+        app.body_search_recenter = true;
         app.body_search_clear();
         assert!(!app.body_search_active);
         assert!(app.body_search_query.is_empty());
         assert!(app.body_search_matches.is_empty());
         assert_eq!(app.body_search_index, 0);
+        assert!(!app.body_search_recenter);
     }
 }
 

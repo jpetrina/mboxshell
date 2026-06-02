@@ -408,8 +408,8 @@ msg!(
 );
 msg!(
     tui_filter_footer,
-    "Tab:Next  Shift-Tab:Prev  Space:Toggle  Enter:Search  Esc:Cancel",
-    "Tab:Sig  Shift-Tab:Ant  Space:Alternar  Enter:Buscar  Esc:Cancelar"
+    "Tab/↑↓:Move  PgUp/PgDn:First/Last  ←→:Change  Space:Toggle  Enter:Search  Esc:Cancel",
+    "Tab/↑↓:Mover  RePág/AvPág:Inicio/Fin  ←→:Cambiar  Space:Alternar  Enter:Buscar  Esc:Cancelar"
 );
 
 // ── Export popup ────────────────────────────────────────────────

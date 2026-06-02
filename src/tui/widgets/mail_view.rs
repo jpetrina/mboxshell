@@ -1,6 +1,6 @@
 //! Mail view widget — displays the content of the selected message.
 
-use ratatui::layout::Rect;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
@@ -35,14 +35,30 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
         .title(title);
 
     let inner = block.inner(area);
-    app.message_view_height = inner.height as usize;
+
+    // While the in-body search prompt is open, reserve the top inner row for it
+    // so it sits right above the body being searched (instead of the global
+    // bottom bar). The body then scrolls within the remaining area.
+    let (prompt_area, body_area) = if app.body_search_active {
+        let rows = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(1), Constraint::Min(0)])
+            .split(inner);
+        (Some(rows[0]), rows[1])
+    } else {
+        (None, inner)
+    };
+    app.message_view_height = body_area.height as usize;
 
     let entry = match app.current_entry() {
         Some(e) => e,
         None => {
             frame.render_widget(block, area);
+            if let Some(prompt_area) = prompt_area {
+                super::body_search_bar::render(frame, app, prompt_area);
+            }
             let empty = Paragraph::new(i18n::tui_no_message()).style(theme.message_body);
-            frame.render_widget(empty, inner);
+            frame.render_widget(empty, body_area);
             return;
         }
     };
@@ -198,10 +214,29 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
         }
     }
 
-    // Apply scroll offset
-    let total_lines = lines.len();
-    let visible_height = inner.height as usize;
-    let max_scroll = total_lines.saturating_sub(visible_height);
+    // Scrolling is measured in *wrapped* rows — the unit ratatui actually
+    // scrolls over once `Wrap` splits long lines. `line_count` reuses ratatui's
+    // own word-wrap, so these counts match the rendered output exactly.
+    let visible_height = body_area.height as usize;
+    let body_width = body_area.width;
+
+    // Bring the focused in-body match into view, if navigation requested it.
+    // We measure the wrapped rows preceding the match's line and centre on it,
+    // so the match lands inside the viewport regardless of earlier wrapping.
+    if app.body_search_recenter {
+        if let Some(m) = app.body_search_matches.get(app.body_search_index) {
+            let target = (app.body_line_start + m.line).min(lines.len());
+            let rows_before = Paragraph::new(lines[..target].to_vec())
+                .wrap(Wrap { trim: false })
+                .line_count(body_width);
+            app.message_scroll_offset = rows_before.saturating_sub(visible_height / 2);
+        }
+        app.body_search_recenter = false;
+    }
+
+    let paragraph = Paragraph::new(lines).wrap(Wrap { trim: false });
+    let total_wrapped = paragraph.line_count(body_width).max(1);
+    let max_scroll = total_wrapped.saturating_sub(visible_height);
     let scroll = app.message_scroll_offset.min(max_scroll);
 
     // Build the scroll indicator for the bottom border (e.g. "[ ↕ 45% ]"),
@@ -215,11 +250,12 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
         .title_bottom(scroll_indicator(scroll, max_scroll, match_info, &theme).right_aligned());
     frame.render_widget(block, area);
 
-    let paragraph = Paragraph::new(lines)
-        .scroll((scroll as u16, 0))
-        .wrap(Wrap { trim: false });
+    // In-body search prompt at the top of the panel (when open).
+    if let Some(prompt_area) = prompt_area {
+        super::body_search_bar::render(frame, app, prompt_area);
+    }
 
-    frame.render_widget(paragraph, inner);
+    frame.render_widget(paragraph.scroll((scroll as u16, 0)), body_area);
 }
 
 /// Build the body scroll indicator shown in the bottom border.
@@ -349,5 +385,72 @@ fn style_urls<'a>(line: &str, theme: &crate::tui::theme::Theme) -> Line<'a> {
         Line::from(Span::styled(line.to_string(), theme.message_body))
     } else {
         Line::from(spans)
+    }
+}
+
+#[cfg(test)]
+mod render_tests {
+    use crate::model::mail::MailBody;
+    use crate::tui::app::{App, LayoutMode, PanelFocus};
+    use ratatui::backend::TestBackend;
+    use ratatui::Terminal;
+    use std::path::PathBuf;
+
+    fn fixture(name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures")
+            .join(name)
+    }
+
+    /// Flatten each terminal row into a string for substring assertions.
+    fn rendered_rows(term: &Terminal<TestBackend>) -> String {
+        let buf = term.backend().buffer();
+        let width = buf.area.width as usize;
+        buf.content()
+            .chunks(width)
+            .map(|row| row.iter().map(|cell| cell.symbol()).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    /// Regression test for the in-body search auto-scroll (issue #12): on a body
+    /// whose early lines wrap many times, navigating to a match near the end must
+    /// bring it on-screen. The previous code scrolled by *unwrapped* line index,
+    /// so the wrapped rows piled up and the match stayed off-screen.
+    #[test]
+    fn in_body_match_is_scrolled_into_view_despite_wrapping() {
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+
+        // 40 long lines (each wraps into several rows) then a unique needle that
+        // fits on one line so it stays contiguous in the rendered buffer.
+        let long = "lorem ipsum dolor sit amet consectetur ".repeat(6);
+        let mut text = String::new();
+        for _ in 0..40 {
+            text.push_str(&long);
+            text.push('\n');
+        }
+        text.push_str("here is the UNIQUENEEDLE token\n");
+        app.current_body = Some(MailBody {
+            text: Some(text),
+            html: None,
+            raw_headers: String::new(),
+            attachments: Vec::new(),
+        });
+        app.layout = LayoutMode::HorizontalSplit;
+        app.focus = PanelFocus::MailView;
+        app.body_search_query = "UNIQUENEEDLE".to_string();
+        app.recompute_body_matches();
+        assert_eq!(app.body_search_matches.len(), 1, "needle occurs once");
+        assert!(app.body_search_recenter, "recompute requests a recentre");
+
+        let mut term = Terminal::new(TestBackend::new(40, 24)).expect("terminal");
+        term.draw(|f| crate::tui::ui::render(f, &mut app))
+            .expect("draw");
+
+        let visible = rendered_rows(&term);
+        assert!(
+            visible.contains("UNIQUENEEDLE"),
+            "focused match must be scrolled into view, got:\n{visible}"
+        );
     }
 }

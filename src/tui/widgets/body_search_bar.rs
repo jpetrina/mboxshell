@@ -1,4 +1,5 @@
-//! In-body search bar shown at the bottom while searching within a message.
+//! In-body search bar shown at the top of the message panel while searching
+//! within a message, next to the body being searched.
 //!
 //! Mirrors the global [`search_bar`](super::search_bar) but scopes the query to
 //! the currently open message body, with a match counter and navigation hints.

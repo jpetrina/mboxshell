@@ -837,11 +837,22 @@ fn handle_search_filter_popup(app: &mut App, key: KeyEvent) -> anyhow::Result<()
         KeyCode::Esc => {
             app.show_search_filter = false;
         }
-        KeyCode::Tab => {
+        // Field navigation: Tab/Down move forward, Shift-Tab/Up move back.
+        // Arrow keys mirror Tab so vertical movement works across every field,
+        // including the Size/Label selectors (whose value is changed with
+        // Left/Right instead — see below).
+        KeyCode::Tab | KeyCode::Down => {
             app.search_filter_focus = focus.next(has_labels);
         }
-        KeyCode::BackTab => {
+        KeyCode::BackTab | KeyCode::Up => {
             app.search_filter_focus = focus.prev(has_labels);
+        }
+        // Page Up/Down (and Home/End) jump to the first/last field.
+        KeyCode::PageUp | KeyCode::Home => {
+            app.search_filter_focus = SearchFilterField::first();
+        }
+        KeyCode::PageDown | KeyCode::End => {
+            app.search_filter_focus = SearchFilterField::last();
         }
         KeyCode::Enter => {
             // Build the query from the filters, then run it through the shared
@@ -861,24 +872,34 @@ fn handle_search_filter_popup(app: &mut App, key: KeyEvent) -> anyhow::Result<()
         KeyCode::Char(' ') if focus == SearchFilterField::WithinResults => {
             app.filter_within_results = !app.filter_within_results;
         }
-        KeyCode::Char('j') | KeyCode::Down if focus == SearchFilterField::Size => {
+        // Selector value change: Right/l/j advance, Left/h/k go back. Up/Down are
+        // reserved for field navigation, so horizontal keys drive the selectors.
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('j')
+            if focus == SearchFilterField::Size =>
+        {
             let max = SIZE_OPTIONS.len().saturating_sub(1);
             if app.filter_size_selected < max {
                 app.filter_size_selected += 1;
             }
         }
-        KeyCode::Char('k') | KeyCode::Up if focus == SearchFilterField::Size => {
+        KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('k')
+            if focus == SearchFilterField::Size =>
+        {
             if app.filter_size_selected > 0 {
                 app.filter_size_selected -= 1;
             }
         }
-        KeyCode::Char('j') | KeyCode::Down if focus == SearchFilterField::Label => {
+        KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('j')
+            if focus == SearchFilterField::Label =>
+        {
             let max = app.all_labels.len(); // 0=Any, so max index = labels.len()
             if app.filter_label_selected < max {
                 app.filter_label_selected += 1;
             }
         }
-        KeyCode::Char('k') | KeyCode::Up if focus == SearchFilterField::Label => {
+        KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('k')
+            if focus == SearchFilterField::Label =>
+        {
             if app.filter_label_selected > 0 {
                 app.filter_label_selected -= 1;
             }

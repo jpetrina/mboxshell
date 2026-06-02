@@ -64,11 +64,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
     }
 
-    // Bottom bar: global search prompt, in-body search prompt, or status bar.
+    // Bottom bar: global search prompt or status bar. The in-body search prompt
+    // is drawn at the top of the message panel itself (see `mail_view`), next to
+    // the body being searched, so it does not appear here.
     if app.search_active {
         widgets::search_bar::render(frame, app, vertical[2]);
-    } else if app.body_search_active {
-        widgets::body_search_bar::render(frame, app, vertical[2]);
     } else {
         widgets::status_bar::render(frame, app, vertical[2]);
     }
