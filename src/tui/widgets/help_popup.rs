@@ -146,6 +146,10 @@ fn build_lines<'a>(
                 key: "a",
                 desc: i18n::tui_help_attachments(),
             },
+            Shortcut {
+                key: "/  n/N",
+                desc: i18n::tui_help_find_in_body(),
+            },
         ],
         cols,
         col_width,

@@ -1,6 +1,7 @@
 //! TUI widgets for rendering different UI panels.
 
 pub mod attachment_popup;
+pub mod body_search_bar;
 pub mod export_popup;
 pub mod header_bar;
 pub mod help_popup;

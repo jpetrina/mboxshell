@@ -87,6 +87,7 @@ fn build_hints(app: &App) -> Vec<(&'static str, &'static str)> {
         }
         PanelFocus::MailView => {
             hints.push(("j/k", i18n::tui_hint_scroll()));
+            hints.push(("/", i18n::tui_hint_find()));
             hints.push(("h", i18n::tui_hint_headers()));
             hints.push(("r", i18n::tui_hint_raw()));
             hints.push(("e", i18n::tui_hint_export()));

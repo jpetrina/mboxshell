@@ -151,6 +151,20 @@ pub const SIZE_OPTIONS: &[(&str, &str)] = &[
 const MAX_SEARCH_HISTORY: usize = 20;
 
 /// Complete TUI state.
+/// A single case-insensitive match found in the message body by the
+/// interactive in-body search. Coordinates are body-relative: `line` is the
+/// index into the body's unwrapped lines, `start`/`end` are byte offsets into
+/// that line (guaranteed to sit on UTF-8 char boundaries).
+#[derive(Debug, Clone, Copy)]
+pub struct BodyMatch {
+    /// Index of the body line (0-based, unwrapped) containing the match.
+    pub line: usize,
+    /// Byte offset of the match start within the line.
+    pub start: usize,
+    /// Byte offset of the match end within the line.
+    pub end: usize,
+}
+
 pub struct App {
     // ── Data ──────────────────────────────────
     /// Path to the open MBOX file.
@@ -268,6 +282,20 @@ pub struct App {
     /// Decoded body of the currently selected message.
     pub current_body: Option<MailBody>,
 
+    // ── In-body search ────────────────────────
+    /// Is the in-body search prompt open and capturing input?
+    pub body_search_active: bool,
+    /// Current in-body search query text.
+    pub body_search_query: String,
+    /// Matches of `body_search_query` within the current body, in reading order.
+    pub body_search_matches: Vec<BodyMatch>,
+    /// Index into `body_search_matches` of the currently focused match.
+    pub body_search_index: usize,
+    /// Absolute line index where the body starts within the message view,
+    /// cached during render so `scroll_to_active_match` can map a body-relative
+    /// match line to a scroll offset.
+    pub body_line_start: usize,
+
     // ── Lifecycle ─────────────────────────────
     pub should_quit: bool,
     /// Transient status message and the instant it was set.
@@ -361,6 +389,11 @@ impl App {
             sort_column: SortColumn::Date,
             sort_ascending: false,
             current_body: None,
+            body_search_active: false,
+            body_search_query: String::new(),
+            body_search_matches: Vec::new(),
+            body_search_index: 0,
+            body_line_start: 0,
             should_quit: false,
             status_message: None,
             list_viewport_height: 20,
@@ -396,6 +429,7 @@ impl App {
         }
         self.selected = index;
         self.message_scroll_offset = 0;
+        self.body_search_clear();
         self.load_selected_body();
     }
 
@@ -985,6 +1019,120 @@ impl App {
     }
 }
 
+impl App {
+    /// Open the interactive in-body search prompt, starting from a blank query.
+    pub fn body_search_open(&mut self) {
+        self.body_search_active = true;
+        self.body_search_query.clear();
+        self.body_search_matches.clear();
+        self.body_search_index = 0;
+    }
+
+    /// Clear all in-body search state (query, matches, prompt).
+    pub fn body_search_clear(&mut self) {
+        self.body_search_active = false;
+        self.body_search_query.clear();
+        self.body_search_matches.clear();
+        self.body_search_index = 0;
+    }
+
+    /// Recompute the list of matches for the current query against the body
+    /// text. Resets the focused match to the first hit and scrolls to it.
+    pub fn recompute_body_matches(&mut self) {
+        self.body_search_matches.clear();
+        self.body_search_index = 0;
+
+        if self.body_search_query.is_empty() {
+            return;
+        }
+        let Some(body) = &self.current_body else {
+            return;
+        };
+        let Some(text) = &body.text else {
+            return;
+        };
+
+        for (line_idx, line) in text.lines().enumerate() {
+            for (start, end) in find_matches_ci(line, &self.body_search_query) {
+                self.body_search_matches.push(BodyMatch {
+                    line: line_idx,
+                    start,
+                    end,
+                });
+            }
+        }
+        self.scroll_to_active_match();
+    }
+
+    /// Move the focus to the next match (wrapping around) and scroll to it.
+    pub fn body_search_next(&mut self) {
+        if self.body_search_matches.is_empty() {
+            return;
+        }
+        self.body_search_index = (self.body_search_index + 1) % self.body_search_matches.len();
+        self.scroll_to_active_match();
+    }
+
+    /// Move the focus to the previous match (wrapping around) and scroll to it.
+    pub fn body_search_prev(&mut self) {
+        if self.body_search_matches.is_empty() {
+            return;
+        }
+        let len = self.body_search_matches.len();
+        self.body_search_index = (self.body_search_index + len - 1) % len;
+        self.scroll_to_active_match();
+    }
+
+    /// Scroll the message view so the focused match sits near the vertical
+    /// centre of the viewport. Approximate: the offset counts unwrapped lines
+    /// while the paragraph scrolls over wrapped ones, matching the existing
+    /// scroll indicator's precision.
+    fn scroll_to_active_match(&mut self) {
+        let Some(m) = self.body_search_matches.get(self.body_search_index) else {
+            return;
+        };
+        let absolute = self.body_line_start + m.line;
+        let half = self.message_view_height / 2;
+        self.message_scroll_offset = absolute.saturating_sub(half);
+    }
+}
+
+/// Find every case-insensitive, non-overlapping occurrence of `needle` in
+/// `haystack`, returning `(start, end)` byte ranges into `haystack`. Both ends
+/// land on UTF-8 char boundaries, so the ranges are always safe to slice.
+/// Comparison is Unicode-aware (`char::to_lowercase`) and tolerant of the rare
+/// case where lowercasing changes a character's byte width.
+fn find_matches_ci(haystack: &str, needle: &str) -> Vec<(usize, usize)> {
+    let mut matches = Vec::new();
+    if needle.is_empty() {
+        return matches;
+    }
+
+    let hay: Vec<(usize, char)> = haystack.char_indices().collect();
+    let need: Vec<char> = needle.chars().collect();
+    let mut i = 0;
+    while i + need.len() <= hay.len() {
+        let is_match = (0..need.len()).all(|j| chars_eq_ci(hay[i + j].1, need[j]));
+        if is_match {
+            let start = hay[i].0;
+            let end = hay
+                .get(i + need.len())
+                .map(|&(byte, _)| byte)
+                .unwrap_or(haystack.len());
+            matches.push((start, end));
+            i += need.len(); // non-overlapping
+        } else {
+            i += 1;
+        }
+    }
+    matches
+}
+
+/// Compare two characters ignoring case, covering ASCII and common Unicode.
+fn chars_eq_ci(a: char, b: char) -> bool {
+    a == b || a.eq_ignore_ascii_case(&b) || a.to_lowercase().eq(b.to_lowercase())
+}
+
 /// Quote a filter value if it contains whitespace, so it survives query
 /// tokenization as a single phrase. Values that already contain a double
 /// quote are returned as-is to avoid producing malformed queries.
@@ -993,6 +1141,104 @@ fn quote_if_needed(value: &str) -> String {
         value.to_string()
     } else {
         format!("\"{value}\"")
+    }
+}
+
+#[cfg(test)]
+mod body_search_tests {
+    use super::{find_matches_ci, App, BodyMatch};
+    use std::path::PathBuf;
+
+    fn fixture(name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures")
+            .join(name)
+    }
+
+    #[test]
+    fn find_matches_basic_and_case_insensitive() {
+        let hits = find_matches_ci("The Audit and the audit AUDIT", "audit");
+        assert_eq!(hits.len(), 3);
+        // Each range slices back to a case-insensitive copy of the needle.
+        for (s, e) in hits {
+            assert_eq!(
+                "The Audit and the audit AUDIT"[s..e].to_lowercase(),
+                "audit"
+            );
+        }
+    }
+
+    #[test]
+    fn find_matches_non_overlapping() {
+        // "aa" in "aaaa" yields two non-overlapping matches, not three.
+        assert_eq!(find_matches_ci("aaaa", "aa"), vec![(0, 2), (2, 4)]);
+    }
+
+    #[test]
+    fn find_matches_empty_needle_is_empty() {
+        assert!(find_matches_ci("anything", "").is_empty());
+    }
+
+    #[test]
+    fn find_matches_unicode_boundaries() {
+        // Ensure byte ranges land on char boundaries for multi-byte text.
+        let hay = "café Café CAFÉ";
+        let hits = find_matches_ci(hay, "café");
+        assert_eq!(hits.len(), 3);
+        for (s, e) in hits {
+            assert_eq!(hay[s..e].to_lowercase(), "café");
+        }
+    }
+
+    #[test]
+    fn next_and_prev_wrap_around() {
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+        app.body_search_matches = vec![
+            BodyMatch {
+                line: 0,
+                start: 0,
+                end: 1,
+            },
+            BodyMatch {
+                line: 1,
+                start: 0,
+                end: 1,
+            },
+            BodyMatch {
+                line: 2,
+                start: 0,
+                end: 1,
+            },
+        ];
+        app.body_search_index = 0;
+
+        app.body_search_next();
+        assert_eq!(app.body_search_index, 1);
+        app.body_search_next();
+        app.body_search_next();
+        assert_eq!(app.body_search_index, 0, "next wraps past the end");
+
+        app.body_search_prev();
+        assert_eq!(app.body_search_index, 2, "prev wraps before the start");
+    }
+
+    #[test]
+    fn clear_resets_all_state() {
+        let mut app = App::new(fixture("simple.mbox"), true).expect("open fixture");
+        app.body_search_active = true;
+        app.body_search_query = "x".to_string();
+        app.body_search_matches = vec![BodyMatch {
+            line: 0,
+            start: 0,
+            end: 1,
+        }];
+        app.body_search_index = 0;
+
+        app.body_search_clear();
+        assert!(!app.body_search_active);
+        assert!(app.body_search_query.is_empty());
+        assert!(app.body_search_matches.is_empty());
+        assert_eq!(app.body_search_index, 0);
     }
 }
 

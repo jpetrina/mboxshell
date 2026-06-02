@@ -22,6 +22,11 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
         return handle_search_input(app, key);
     }
 
+    // ── In-body search prompt (captures all keys) ─────────
+    if app.body_search_active {
+        return handle_body_search_input(app, key);
+    }
+
     // ── Popup handling (captures all keys) ────────────────
     if app.show_help {
         match key.code {
@@ -71,8 +76,12 @@ pub fn handle_key_event(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
             app.focus = next_focus(app, false);
             return Ok(());
         }
-        // Search from any panel (except sidebar)
-        (_, KeyCode::Char('/')) if app.focus != PanelFocus::Sidebar => {
+        // Global message search — from any panel except the sidebar and the
+        // message view. With the message view focused, '/' searches within the
+        // open body instead (handled in `handle_mail_view_keys`).
+        (_, KeyCode::Char('/'))
+            if app.focus != PanelFocus::Sidebar && app.focus != PanelFocus::MailView =>
+        {
             app.search_active = true;
             app.search_query.clear();
             app.focus = PanelFocus::SearchBar;
@@ -338,8 +347,18 @@ fn handle_mail_view_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
         KeyCode::Char('g') | KeyCode::Home => {
             app.message_scroll_offset = 0;
         }
+        // Open the in-body search prompt (less/vim style).
+        KeyCode::Char('/') => app.body_search_open(),
+        // Navigate confirmed matches once the prompt is closed.
+        KeyCode::Char('n') => app.body_search_next(),
+        KeyCode::Char('N') => app.body_search_prev(),
         KeyCode::Esc => {
-            app.focus = PanelFocus::MailList;
+            // Esc escalates: first dismiss any lingering matches, then leave.
+            if !app.body_search_matches.is_empty() {
+                app.body_search_clear();
+            } else {
+                app.focus = PanelFocus::MailList;
+            }
         }
         KeyCode::Char('h') => app.show_full_headers = !app.show_full_headers,
         KeyCode::Char('H') => app.request_external_html_view(),
@@ -354,6 +373,32 @@ fn handle_mail_view_keys(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
         }
         KeyCode::Char('q') => {
             app.should_quit = true;
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Key handling while the in-body search prompt is open and capturing input.
+///
+/// Typing refines the query with live highlighting; Enter confirms (closing the
+/// prompt but keeping matches navigable with n/N); Esc cancels and clears.
+fn handle_body_search_input(app: &mut App, key: KeyEvent) -> anyhow::Result<()> {
+    match key.code {
+        KeyCode::Esc => {
+            app.body_search_clear();
+        }
+        KeyCode::Enter => {
+            // Confirm: keep matches highlighted, close the prompt so n/N navigate.
+            app.body_search_active = false;
+        }
+        KeyCode::Backspace => {
+            app.body_search_query.pop();
+            app.recompute_body_matches();
+        }
+        KeyCode::Char(c) => {
+            app.body_search_query.push(c);
+            app.recompute_body_matches();
         }
         _ => {}
     }

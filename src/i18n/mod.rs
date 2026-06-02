@@ -311,6 +311,11 @@ msg!(tui_help_full_headers, "Full headers", "Cabeceras completas");
 msg!(tui_help_raw_source, "Raw source", "C\u{f3}digo fuente");
 msg!(tui_help_export_menu, "Export menu", "Men\u{fa} exportar");
 msg!(tui_help_attachments, "Attachments", "Adjuntos");
+msg!(
+    tui_help_find_in_body,
+    "Find in message / next-prev",
+    "Buscar en mensaje / sig-ant"
+);
 msg!(tui_help_mark_unmark, "Mark / unmark", "Marcar / desmarcar");
 msg!(tui_help_mark_all, "Mark all", "Marcar todos");
 msg!(tui_help_cycle_sort, "Cycle sort col", "Cambiar columna");
@@ -366,6 +371,21 @@ msg!(tui_hint_cancel, "Cancel", "Cancelar");
 msg!(tui_scroll_all, "All", "Todo");
 msg!(tui_scroll_top, "Top", "Inicio");
 msg!(tui_scroll_bot, "Bot", "Fin");
+
+// ── In-body search ──────────────────────────────────────────────
+
+msg!(
+    tui_body_search_hint,
+    "type to search in message",
+    "escribe para buscar en el mensaje"
+);
+msg!(tui_body_search_no_match, "no matches", "sin coincidencias");
+msg!(
+    tui_body_search_nav_hint,
+    "n/N: next/prev \u{b7} Esc: cancel",
+    "n/N: siguiente/anterior \u{b7} Esc: cancelar"
+);
+msg!(tui_hint_find, "Find", "Buscar");
 
 // ── Search filter popup labels ──────────────────────────────────
 

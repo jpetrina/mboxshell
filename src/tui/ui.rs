@@ -64,9 +64,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
     }
 
-    // Status bar or search bar
+    // Bottom bar: global search prompt, in-body search prompt, or status bar.
     if app.search_active {
         widgets::search_bar::render(frame, app, vertical[2]);
+    } else if app.body_search_active {
+        widgets::body_search_bar::render(frame, app, vertical[2]);
     } else {
         widgets::status_bar::render(frame, app, vertical[2]);
     }

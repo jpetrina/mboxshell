@@ -1,12 +1,13 @@
 //! Mail view widget — displays the content of the selected message.
 
 use ratatui::layout::Rect;
+use ratatui::style::Modifier;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 use ratatui::Frame;
 
 use crate::i18n;
-use crate::tui::app::{App, PanelFocus};
+use crate::tui::app::{App, BodyMatch, PanelFocus};
 use crate::tui::theme::current_theme;
 
 /// Render the message view panel.
@@ -151,12 +152,21 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
         )));
         lines.push(Line::from(""));
 
-        // Body text
+        // Body text. Record where the body begins so in-body search can map a
+        // match's body-relative line to an absolute scroll offset.
+        app.body_line_start = lines.len();
         if let Some(body) = &app.current_body {
             if let Some(text) = &body.text {
-                for line in text.lines() {
-                    // Detect URLs and highlight them
-                    let styled_line = style_body_line(line, &theme);
+                for (idx, line) in text.lines().enumerate() {
+                    // Highlight in-body search matches when present, otherwise
+                    // fall back to plain URL detection.
+                    let styled_line = style_body_line(
+                        line,
+                        &theme,
+                        &app.body_search_matches,
+                        app.body_search_index,
+                        idx,
+                    );
                     lines.push(styled_line);
                 }
             } else {
@@ -194,8 +204,15 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let max_scroll = total_lines.saturating_sub(visible_height);
     let scroll = app.message_scroll_offset.min(max_scroll);
 
-    // Build the scroll indicator for the bottom border (e.g. "[ ↕ 45% ]").
-    let block = block.title_bottom(scroll_indicator(scroll, max_scroll, &theme).right_aligned());
+    // Build the scroll indicator for the bottom border (e.g. "[ ↕ 45% ]"),
+    // appending an in-body search match counter when a search is active.
+    let match_info = if app.body_search_matches.is_empty() {
+        None
+    } else {
+        Some((app.body_search_index + 1, app.body_search_matches.len()))
+    };
+    let block = block
+        .title_bottom(scroll_indicator(scroll, max_scroll, match_info, &theme).right_aligned());
     frame.render_widget(block, area);
 
     let paragraph = Paragraph::new(lines)
@@ -215,9 +232,10 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
 fn scroll_indicator<'a>(
     scroll: usize,
     max_scroll: usize,
+    match_info: Option<(usize, usize)>,
     theme: &crate::tui::theme::Theme,
 ) -> Line<'a> {
-    let label = if max_scroll == 0 {
+    let scroll_label = if max_scroll == 0 {
         format!(" [ {} ] ", i18n::tui_scroll_all())
     } else if scroll == 0 {
         format!(" [ \u{2193} {} ] ", i18n::tui_scroll_top())
@@ -227,11 +245,72 @@ fn scroll_indicator<'a>(
         let percent = (scroll * 100) / max_scroll;
         format!(" [ \u{2195} {percent}% ] ")
     };
-    Line::from(Span::styled(label, theme.border))
+
+    let mut spans = Vec::new();
+    if let Some((current, total)) = match_info {
+        spans.push(Span::styled(
+            format!(" [ {current}/{total} ] "),
+            theme.search_highlight,
+        ));
+    }
+    spans.push(Span::styled(scroll_label, theme.border));
+    Line::from(spans)
+}
+
+/// Style a single body line for display.
+///
+/// When the in-body search has matches on this line, those matches are
+/// highlighted (the focused one is emphasised) and URL colouring is skipped for
+/// the line. Otherwise the line falls back to plain URL highlighting.
+fn style_body_line<'a>(
+    line: &str,
+    theme: &crate::tui::theme::Theme,
+    matches: &[BodyMatch],
+    active_index: usize,
+    line_idx: usize,
+) -> Line<'a> {
+    // Collect this line's matches in reading order, tagging the focused one.
+    let hits: Vec<(usize, usize, bool)> = matches
+        .iter()
+        .enumerate()
+        .filter(|(_, m)| m.line == line_idx)
+        .map(|(global_idx, m)| (m.start, m.end, global_idx == active_index))
+        .collect();
+
+    if hits.is_empty() {
+        return style_urls(line, theme);
+    }
+
+    let mut spans = Vec::new();
+    let mut last_end = 0;
+    for (start, end, is_active) in hits {
+        if start > last_end {
+            spans.push(Span::styled(
+                line[last_end..start].to_string(),
+                theme.message_body,
+            ));
+        }
+        let style = if is_active {
+            theme
+                .search_highlight
+                .add_modifier(Modifier::REVERSED | Modifier::BOLD)
+        } else {
+            theme.search_highlight
+        };
+        spans.push(Span::styled(line[start..end].to_string(), style));
+        last_end = end;
+    }
+    if last_end < line.len() {
+        spans.push(Span::styled(
+            line[last_end..].to_string(),
+            theme.message_body,
+        ));
+    }
+    Line::from(spans)
 }
 
 /// Style a single body line, highlighting URLs.
-fn style_body_line<'a>(line: &str, theme: &crate::tui::theme::Theme) -> Line<'a> {
+fn style_urls<'a>(line: &str, theme: &crate::tui::theme::Theme) -> Line<'a> {
     let mut spans = Vec::new();
     let mut last_end = 0;
 
