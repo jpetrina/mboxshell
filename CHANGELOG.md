@@ -4,6 +4,12 @@ All notable changes to mboxshell are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.2
+
+- Fix: in-body search `n` / `N` now **reliably scrolls the focused match into view**. The auto-scroll measured position in *unwrapped* lines while the body actually scrolls over *wrapped* rows, so on messages with long lines the match could land off-screen and `n`/`N` appeared to do nothing. Scrolling is now wrap-aware (it uses ratatui's own word-wrap to map a match to its on-screen row), which also lets the body scroll cleanly all the way to the end (#12).
+- Change: the in-body search prompt now appears at the **top of the message panel**, right next to the body being searched, instead of in the global bottom bar (#12).
+- Add: **vertical keyboard navigation in the Search Filters popup.** `↑` / `↓` move between fields (alongside `Tab` / `Shift-Tab`) and `PgUp` / `PgDn` (or `Home` / `End`) jump to the first / last field. The Size and Label selectors now change their value with `←` / `→` (with `j` / `k` kept as aliases), since the arrow keys now move between fields (#13).
+
 ## v0.4.1
 
 - Add: **interactive search within the open message body**, less/vim style. With the message view focused, `/` opens a prompt that highlights every match live as you type; `Enter` confirms and keeps the matches navigable; `n` / `N` jump to the next/previous match with auto-scroll that brings it into view; a `[ current/total ]` counter sits in the body border next to the scroll indicator; `Esc` first clears the matches, then returns to the list. Matching is case-insensitive and Unicode-aware. The global `/` search is unchanged from every other panel (#12).

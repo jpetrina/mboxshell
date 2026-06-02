@@ -4,6 +4,12 @@ Todos los cambios relevantes de mboxshell se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
 
+## v0.4.2
+
+- Corregido: la búsqueda en el cuerpo con `n` / `N` ahora **desplaza de forma fiable la coincidencia enfocada hasta la vista**. El auto-scroll medía la posición en líneas *sin envolver*, mientras que el cuerpo se desplaza sobre filas *envueltas*, así que en mensajes con líneas largas la coincidencia podía quedar fuera de pantalla y `n`/`N` parecían no hacer nada. Ahora el desplazamiento tiene en cuenta el ajuste de línea (usa el propio word-wrap de ratatui para mapear una coincidencia a su fila en pantalla), lo que además permite desplazar el cuerpo limpiamente hasta el final (#12).
+- Cambiado: el prompt de búsqueda en el cuerpo ahora aparece en la **parte superior del panel del mensaje**, justo al lado del cuerpo que se busca, en vez de en la barra inferior global (#12).
+- Añadido: **navegación vertical con teclado en el popup de Filtros de búsqueda.** `↑` / `↓` se mueven entre campos (junto a `Tab` / `Shift-Tab`) y `RePág` / `AvPág` (o `Inicio` / `Fin`) saltan al primer / último campo. Los selectores de Tamaño y Etiqueta ahora cambian su valor con `←` / `→` (manteniendo `j` / `k` como alias), ya que las flechas ahora se usan para moverse entre campos (#13).
+
 ## v0.4.1
 
 - Añadido: **búsqueda interactiva dentro del cuerpo del mensaje abierto**, al estilo less/vim. Con el panel de mensaje enfocado, `/` abre un prompt que resalta todas las coincidencias en vivo según escribes; `Enter` confirma y las mantiene navegables; `n` / `N` saltan a la coincidencia siguiente/anterior con auto-scroll que la centra en pantalla; un contador `[ actual/total ]` aparece en el borde del cuerpo junto al indicador de scroll; `Esc` primero limpia las coincidencias y luego vuelve a la lista. La búsqueda no distingue mayúsculas y es compatible con Unicode. La búsqueda global con `/` no cambia en el resto de paneles (#12).
