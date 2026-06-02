@@ -1,7 +1,7 @@
 # mboxShell — User Manual
 
 > Complete guide to every feature of `mboxShell`, the fast terminal MBOX viewer.
-> **Applies to mboxShell v0.4.1.**
+> **Applies to mboxShell v0.4.2.**
 > Spanish version: [MANUAL-ES.md](MANUAL-ES.md) · Short overview: [../README.md](../README.md) · Changes: [../CHANGELOG.md](../CHANGELOG.md)
 
 `mboxShell` opens, searches and exports `.mbox` files of any size (50 GB+) from the terminal, without ever loading the whole file into memory and **without ever modifying the source file** (it is strictly read-only).
@@ -291,6 +291,8 @@ Press `a` to open the attachment popup for the current message:
 
 ### Message view — in-body search (press `/` with the message view focused)
 
+The search prompt opens at the **top of the message panel**, next to the body.
+
 | Key | Action |
 |-----|--------|
 | `/` | Open the in-body search prompt |
@@ -312,10 +314,11 @@ Press `a` to open the attachment popup for the current message:
 
 | Key | Action |
 |-----|--------|
-| `Tab` / `Shift-Tab` | Move between fields |
+| `Tab` / `↑` / `↓` | Move between fields (`Shift-Tab` moves back) |
+| `PgUp` / `PgDn` (or `Home` / `End`) | Jump to the first / last field |
 | *(type)* | Fill the focused field (Text, From, To, Subject, dates…) |
 | `Space` | Toggle the focused checkbox (`has:attachment`, *Search within previous results*) |
-| `j` / `k` (or `↑`/`↓`) | Change the Size / Label selector |
+| `←` / `→` (or `j` / `k`) | Change the Size / Label selector value |
 | `Enter` | Build the query and run it |
 | `Esc` | Close the popup |
 

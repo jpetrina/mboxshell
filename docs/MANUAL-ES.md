@@ -1,7 +1,7 @@
 # mboxShell — Manual de usuario
 
 > Guía completa de todas las funciones de `mboxShell`, el visor rápido de MBOX para terminal.
-> **Válido para mboxShell v0.4.1.**
+> **Válido para mboxShell v0.4.2.**
 > Versión en inglés: [MANUAL.md](MANUAL.md) · Resumen breve: [../README-ES.md](../README-ES.md) · Cambios: [../CHANGELOG-ES.md](../CHANGELOG-ES.md)
 
 `mboxShell` abre, busca y exporta ficheros `.mbox` de cualquier tamaño (más de 50 GB) desde la terminal, sin cargar nunca el fichero entero en memoria y **sin modificar jamás el fichero original** (es estrictamente de solo lectura).
@@ -291,6 +291,8 @@ Pulsa `a` para abrir el popup de adjuntos del mensaje actual:
 
 ### Vista de mensaje — búsqueda en el cuerpo (pulsa `/` con la vista de mensaje enfocada)
 
+El prompt de búsqueda se abre en la **parte superior del panel del mensaje**, junto al cuerpo.
+
 | Tecla | Acción |
 |-------|--------|
 | `/` | Abrir el prompt de búsqueda en el cuerpo |
@@ -312,10 +314,11 @@ Pulsa `a` para abrir el popup de adjuntos del mensaje actual:
 
 | Tecla | Acción |
 |-------|--------|
-| `Tab` / `Shift-Tab` | Moverse entre campos |
+| `Tab` / `↑` / `↓` | Moverse entre campos (`Shift-Tab` retrocede) |
+| `RePág` / `AvPág` (o `Inicio` / `Fin`) | Saltar al primer / último campo |
 | *(escribir)* | Rellenar el campo enfocado (Texto, De, Para, Asunto, fechas…) |
 | `Espacio` | Alternar la casilla enfocada (`has:attachment`, *Buscar dentro de resultados previos*) |
-| `j` / `k` (o `↑`/`↓`) | Cambiar el selector de Tamaño / Etiqueta |
+| `←` / `→` (o `j` / `k`) | Cambiar el valor del selector de Tamaño / Etiqueta |
 | `Enter` | Construir la consulta y ejecutarla |
 | `Esc` | Cerrar el popup |
 
