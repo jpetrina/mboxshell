@@ -1,6 +1,7 @@
 # mboxShell — Manual de usuario
 
 > Guía completa de todas las funciones de `mboxShell`, el visor rápido de MBOX para terminal.
+> **Válido para mboxShell v0.4.1.**
 > Versión en inglés: [MANUAL.md](MANUAL.md) · Resumen breve: [../README-ES.md](../README-ES.md) · Cambios: [../CHANGELOG-ES.md](../CHANGELOG-ES.md)
 
 `mboxShell` abre, busca y exporta ficheros `.mbox` de cualquier tamaño (más de 50 GB) desde la terminal, sin cargar nunca el fichero entero en memoria y **sin modificar jamás el fichero original** (es estrictamente de solo lectura).
@@ -214,6 +215,18 @@ Cámbialos en cualquier momento con las teclas numéricas:
 
 Desplaza el cuerpo **sin salir de la lista** con `Shift-↑` / `Shift-↓` (y `Shift-RePág` / `Shift-AvPág`). Las flechas normales siguen navegando la lista. El indicador de posición en el borde del mensaje te dice de un vistazo si queda más por leer.
 
+### Buscar dentro de un mensaje
+
+Con un mensaje abierto y la **vista de mensaje enfocada** (pulsa `Enter` para cambiar a ella), pulsa `/` para buscar dentro del cuerpo, al estilo *less/vim*:
+
+- Escribe el término — cada coincidencia se **resalta en vivo** según escribes, y la vista salta a la primera.
+- `Enter` confirma la búsqueda: el prompt se cierra pero los resaltados se mantienen y las coincidencias siguen siendo navegables.
+- `n` / `N` van a la coincidencia **siguiente / anterior**, con auto-scroll que la centra; la coincidencia activa se resalta de forma destacada.
+- En el borde del mensaje aparece un contador `[ actual/total ]`, junto al indicador de scroll (p. ej. `[ 3/12 ]`).
+- `Esc` limpia las coincidencias; un segundo `Esc` vuelve a la lista.
+
+La búsqueda **no distingue mayúsculas** y es compatible con Unicode. Es independiente de la búsqueda global: `/` desde la lista o la barra lateral sigue buscando *entre mensajes*; `/` con la vista de mensaje enfocada busca *dentro del cuerpo abierto*.
+
 ### Barra lateral de etiquetas
 
 Pulsa `l` para mostrar / enfocar / ocultar la barra lateral (solo se rellena si el buzón tiene `X-Gmail-Labels`). Seleccionar una etiqueta limita la lista a esa etiqueta; las búsquedas posteriores se mantienen dentro de ella.
@@ -275,6 +288,16 @@ Pulsa `a` para abrir el popup de adjuntos del mensaje actual:
 | `?` | Ayuda |
 | `Esc` | Volver a la lista / cerrar popup |
 | `q` o `Ctrl-C` | Salir |
+
+### Vista de mensaje — búsqueda en el cuerpo (pulsa `/` con la vista de mensaje enfocada)
+
+| Tecla | Acción |
+|-------|--------|
+| `/` | Abrir el prompt de búsqueda en el cuerpo |
+| *(escribir)* | Refinar la consulta; las coincidencias se resaltan en vivo y la vista salta a la primera |
+| `Enter` | Confirmar — cierra el prompt, mantiene resaltados y navegación con `n`/`N` |
+| `n` / `N` | Ir a la coincidencia siguiente / anterior (con auto-scroll) |
+| `Esc` | Limpiar las coincidencias; púlsalo de nuevo para volver a la lista |
 
 ### Barra de búsqueda (tras pulsar `/`)
 

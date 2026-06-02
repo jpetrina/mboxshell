@@ -1,6 +1,7 @@
 # mboxShell — User Manual
 
 > Complete guide to every feature of `mboxShell`, the fast terminal MBOX viewer.
+> **Applies to mboxShell v0.4.1.**
 > Spanish version: [MANUAL-ES.md](MANUAL-ES.md) · Short overview: [../README.md](../README.md) · Changes: [../CHANGELOG.md](../CHANGELOG.md)
 
 `mboxShell` opens, searches and exports `.mbox` files of any size (50 GB+) from the terminal, without ever loading the whole file into memory and **without ever modifying the source file** (it is strictly read-only).
@@ -214,6 +215,18 @@ Switch any time with the number keys:
 
 Scroll the body **without leaving the list** using `Shift-↑` / `Shift-↓` (and `Shift-PageUp` / `Shift-PageDown`). The plain arrow keys keep navigating the list. The position indicator in the message border tells you at a glance whether there is more to read.
 
+### Searching within a message
+
+When a message is open and the **message view is focused** (press `Enter` to switch to it), press `/` to search inside the body, *less/vim* style:
+
+- Type your term — every match is **highlighted live** as you type, and the view jumps to the first one.
+- `Enter` confirms the search: the prompt closes but the highlights stay and the matches remain navigable.
+- `n` / `N` move to the **next / previous** match, auto-scrolling to bring it into view; the focused match is emphasised.
+- A `[ current/total ]` counter appears in the message border, next to the scroll indicator (e.g. `[ 3/12 ]`).
+- `Esc` clears the matches; a second `Esc` returns to the list.
+
+Matching is **case-insensitive** and Unicode-aware. This is separate from the global search: `/` from the list or sidebar still searches *across messages*; `/` with the message view focused searches *within the open body*.
+
 ### Labels sidebar
 
 Press `l` to show / focus / hide the sidebar (only populated when the mailbox has `X-Gmail-Labels`). Selecting a label scopes the list to that label; subsequent searches stay within it.
@@ -275,6 +288,16 @@ Press `a` to open the attachment popup for the current message:
 | `?` | Help |
 | `Esc` | Back to list / close popup |
 | `q` or `Ctrl-C` | Quit |
+
+### Message view — in-body search (press `/` with the message view focused)
+
+| Key | Action |
+|-----|--------|
+| `/` | Open the in-body search prompt |
+| *(type)* | Refine the query; matches highlight live and the view jumps to the first |
+| `Enter` | Confirm — close the prompt, keep highlights and `n`/`N` navigation |
+| `n` / `N` | Jump to the next / previous match (auto-scrolls to it) |
+| `Esc` | Clear the matches; press again to return to the list |
 
 ### Search bar (after pressing `/`)
 
