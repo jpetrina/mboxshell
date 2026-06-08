@@ -53,8 +53,8 @@ impl Theme {
             message_header_label: Style::default()
                 .fg(Color::Rgb(130, 170, 255))
                 .add_modifier(Modifier::BOLD),
-            message_header_value: Style::default().fg(Color::Rgb(220, 220, 230)),
-            message_body: Style::default().fg(Color::Rgb(220, 220, 230)),
+            message_header_value: Style::default().fg(Color::Rgb(235, 235, 245)),
+            message_body: Style::default().fg(Color::Rgb(235, 235, 245)),
             url: Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::UNDERLINED),

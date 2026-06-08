@@ -7,6 +7,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 ## v0.4.3
 
 - Añadido: el comando `stats` ahora muestra una **línea `Duplicados`** que cuenta los mensajes que repiten un `Message-ID` ya visto, junto al número de IDs distintos — p. ej. `Duplicados  185 (42 IDs únicos)`. Los mensajes sin `Message-ID` no se cuentan como duplicados. Las mismas cifras `duplicates` / `unique_ids` se incluyen en `stats --json`. Gracias a @jpetrina (#14).
+- Cambiado: el **cuerpo del mensaje y los valores de las cabeceras ahora se muestran en un casi-blanco más brillante** (`rgb(235,235,245)` en vez de `rgb(220,220,230)`), para mejor contraste sobre fondos negros — especialmente en terminales translúcidos donde el tono anterior podía verse apagado (#13).
 
 ## v0.4.2
 
