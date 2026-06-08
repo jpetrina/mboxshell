@@ -4,6 +4,10 @@ All notable changes to mboxshell are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.4.3
+
+- Add: the `stats` command now reports a **`Duplicates` line** counting messages that repeat a `Message-ID` already seen, alongside the number of distinct IDs — e.g. `Duplicates  185 (42 Unique IDs)`. Messages without a `Message-ID` are not counted as duplicates. The same `duplicates` / `unique_ids` figures are included in `stats --json`. Thanks to @jpetrina (#14).
+
 ## v0.4.2
 
 - Fix: in-body search `n` / `N` now **reliably scrolls the focused match into view**. The auto-scroll measured position in *unwrapped* lines while the body actually scrolls over *wrapped* rows, so on messages with long lines the match could land off-screen and `n`/`N` appeared to do nothing. Scrolling is now wrap-aware (it uses ratatui's own word-wrap to map a match to its on-screen row), which also lets the body scroll cleanly all the way to the end (#12).

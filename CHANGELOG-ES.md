@@ -4,6 +4,10 @@ Todos los cambios relevantes de mboxshell se documentan en este fichero.
 
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y el proyecto se ajusta a [Semantic Versioning](https://semver.org/lang/es/).
 
+## v0.4.3
+
+- Añadido: el comando `stats` ahora muestra una **línea `Duplicados`** que cuenta los mensajes que repiten un `Message-ID` ya visto, junto al número de IDs distintos — p. ej. `Duplicados  185 (42 IDs únicos)`. Los mensajes sin `Message-ID` no se cuentan como duplicados. Las mismas cifras `duplicates` / `unique_ids` se incluyen en `stats --json`. Gracias a @jpetrina (#14).
+
 ## v0.4.2
 
 - Corregido: la búsqueda en el cuerpo con `n` / `N` ahora **desplaza de forma fiable la coincidencia enfocada hasta la vista**. El auto-scroll medía la posición en líneas *sin envolver*, mientras que el cuerpo se desplaza sobre filas *envueltas*, así que en mensajes con líneas largas la coincidencia podía quedar fuera de pantalla y `n`/`N` parecían no hacer nada. Ahora el desplazamiento tiene en cuenta el ajuste de línea (usa el propio word-wrap de ratatui para mapear una coincidencia a su fila en pantalla), lo que además permite desplazar el cuerpo limpiamente hasta el final (#12).
