@@ -98,20 +98,15 @@ impl MboxParser {
         loop {
             line_buf.clear();
             let line_len = {
-                let buf = reader
-                    .fill_buf()
+                let consumed = reader
+                    .read_until(b'\n', &mut line_buf)
                     .map_err(|e| MboxError::io(&self.path, e))?;
-                if buf.is_empty() {
+
+                if consumed == 0 {
                     break; // EOF
                 }
-                let newline_pos = memchr_newline(buf);
-                let consume_len = match newline_pos {
-                    Some(pos) => pos + 1,
-                    None => buf.len(),
-                };
-                line_buf.extend_from_slice(&buf[..consume_len]);
-                reader.consume(consume_len);
-                consume_len as u64
+
+                consumed as u64
             };
 
             let is_from_line = is_mbox_separator(&line_buf);
@@ -216,20 +211,15 @@ impl MboxParser {
             // Read a line into the reusable buffer (zero-alloc in the common case)
             line_buf.clear();
             let line_len = {
-                let buf = reader
-                    .fill_buf()
+                let consumed = reader
+                    .read_until(b'\n', &mut line_buf)
                     .map_err(|e| MboxError::io(&self.path, e))?;
-                if buf.is_empty() {
+
+                if consumed == 0 {
                     break; // EOF
                 }
-                let newline_pos = memchr_newline(buf);
-                let consume_len = match newline_pos {
-                    Some(pos) => pos + 1,
-                    None => buf.len(),
-                };
-                line_buf.extend_from_slice(&buf[..consume_len]);
-                reader.consume(consume_len);
-                consume_len as u64
+
+                consumed as u64
             };
 
             let is_from_line = is_mbox_separator(&line_buf);
@@ -261,6 +251,12 @@ impl MboxParser {
                     in_headers = false;
                     let mut saved = Vec::with_capacity(header_buf.len());
                     std::mem::swap(&mut saved, &mut header_buf);
+
+                    let str = String::from_utf8_lossy(&saved);
+                    if !(str.contains("Date: ") && str.contains("Subject: ")) {
+                        warn!("Malformed headers at offset={}", current_offset);
+                    }
+
                     prev_headers = Some(saved);
                 } else {
                     header_buf.extend_from_slice(&line_buf);
@@ -309,12 +305,6 @@ impl MboxParser {
             .map_err(|e| MboxError::io(path, e))?;
         Ok(buffer)
     }
-}
-
-/// Fast newline search (equivalent to memchr for `\n`).
-#[inline]
-fn memchr_newline(buf: &[u8]) -> Option<usize> {
-    buf.iter().position(|&b| b == b'\n')
 }
 
 /// Check whether a line is an MBOX separator (`From ` at the start).
